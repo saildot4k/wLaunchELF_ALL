@@ -11,8 +11,7 @@
 #define SOURCE_DEVICE_WAIT_INTERVAL_MS 1000
 #define SOURCE_DEVICE_WAIT_TIMEOUT_MS 6000
 #define MX4SIO_POST_WRITE_SETTLE_MS 500
-#define ROOT_DEVICE_POLL_MS 1000
-#define ROOT_DEVICE_POLL_IDLE_MS 1000
+#define UDPFS_NOT_FOUND_POPUP_MS 3000
 
 static int isHddBrowserPath(const char *path)
 {
@@ -104,6 +103,32 @@ static void waitUntilTimer(u64 end_time)
 {
 	while (Timer() < end_time) {
 	}
+}
+
+static void showUdpfsNotFoundPopupAndReboot(void)
+{
+	const char *message = "UDPFS Server not found!";
+	int text_width, box_width, box_height;
+	int box_x, box_y;
+	u64 popup_start;
+
+	text_width = printXY(message, 0, 0, 0, FALSE, 0);
+	box_width = text_width + 16;
+	box_height = FONT_HEIGHT + 16;
+	box_x = (SCREEN_WIDTH - box_width) / 2;
+	box_y = (SCREEN_HEIGHT - box_height) / 2;
+
+	drawPopSprite(setting->color[COLOR_BACKGR], box_x, box_y, box_x + box_width, box_y + box_height);
+	drawFrame(box_x, box_y, box_x + box_width, box_y + box_height, setting->color[COLOR_FRAME]);
+	printXY(message, box_x + 8, box_y + 8, setting->color[COLOR_TEXT], TRUE, 0);
+	drawScr();
+
+	popup_start = Timer();
+	rebootIopAndReloadCoreStack();
+	waitUntilTimer(popup_start + UDPFS_NOT_FOUND_POPUP_MS);
+
+	drawSprite(setting->color[COLOR_BACKGR], box_x, box_y, box_x + box_width + 1, box_y + box_height + 1);
+	drawScr();
 }
 
 static int probeDirectory(const char *path)
@@ -976,8 +1001,6 @@ int getFilePath(char *out, int cnfmode)
 	int event, post_event = 0;
 	int font_height;
 	int iconbase, iconcolr;
-	u64 root_device_poll_time = 0;
-	u64 last_input_time;
 
 	elisa_failed = FALSE;  //set at failure to load font, cleared at each browser entry
 
@@ -1009,7 +1032,6 @@ int getFilePath(char *out, int cnfmode)
 		font_height = FONT_HEIGHT + 2;
 	rows = (Menu_end_y - Menu_start_y) / font_height;
 
-	last_input_time = Timer();
 	event = 1;  //event = initial entry
 	while (1) {
 
@@ -1020,7 +1042,6 @@ int getFilePath(char *out, int cnfmode)
 			if (new_pad) {
 				browser_pushed = TRUE;
 				event |= 2;  //event |= pad command
-				last_input_time = Timer();
 			}
 			if (new_pad & PAD_UP) {
 				if (browser_nfiles > 0) {
@@ -1452,7 +1473,7 @@ int getFilePath(char *out, int cnfmode)
 			browser_cd = TRUE;
 			browser_repos = TRUE;
 		}  //ends 'if(browser_up)'
-		if (!browser_cd && path[0] == '\0' && Timer() >= root_device_poll_time && Timer() >= last_input_time + ROOT_DEVICE_POLL_IDLE_MS) {
+		if (!browser_cd && path[0] == '\0' && pollRootMemoryCardDevices()) {
 			if (browser_nfiles > 0)
 				strcpy(cursorEntry, files[browser_sel].name);
 			else
@@ -1472,8 +1493,7 @@ int getFilePath(char *out, int cnfmode)
 #ifdef UDPFS
 			if (udpfs_dir_open_failed) {
 				udpfs_dir_open_failed = 0;
-				ynDialog("Check that UDPFS server is running or restart it.");
-				rebootIopAndReloadCoreStack();
+				showUdpfsNotFoundPopupAndReboot();
 				path[0] = '\0';
 				browser_nfiles = setFileList(path, ext, files, cnfmode);
 			}
@@ -1532,8 +1552,6 @@ int getFilePath(char *out, int cnfmode)
 			memset(marks, 0, MAX_ENTRY);
 			browser_cd = FALSE;
 			browser_up = FALSE;
-			if (path[0] == '\0')
-				root_device_poll_time = Timer() + ROOT_DEVICE_POLL_MS;
 		}  //ends if(browser_cd)
 		if (!strncmp(path, "cdfs", 4))
 			uLE_cdStop();

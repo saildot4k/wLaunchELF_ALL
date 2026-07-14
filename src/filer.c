@@ -143,6 +143,15 @@ int readGENERIC(const char *path, FILEINFO *info, int max);
 #define USB_BROWSER_MAX_DRIVES 2
 #define USB_DISCOVERY_ATTEMPTS 3
 #define USB_DISCOVERY_SETTLE_MS 500
+#define ROOT_MC_POLL_INTERVAL_MS 500
+
+static int root_mc_present[2] = {1, 1};
+static int root_mc_poll_active = 0;
+static int root_mc_poll_port = 0;
+static int root_mc_poll_type = 0;
+static int root_mc_poll_free = 0;
+static int root_mc_poll_format = 0;
+static u64 root_mc_next_poll_time = 0;
 
 static int mapUsbPathToFatFsPath(const char *usb_path, char *fatfs_path)
 {
@@ -1022,13 +1031,49 @@ static int addRootUsbDeviceEntries(FILEINFO *files, int nfiles)
 	return nfiles;
 }
 
-static int memoryCardExists(int port)
+static int memoryCardResultIndicatesPresent(int ret)
 {
-	int dummy, ret;
-
-	mcGetInfo(port, 0, &dummy, &dummy, &dummy);
-	mcSync(0, NULL, &ret);
 	return (ret == -1 || ret == 0);
+}
+
+static int rootMemoryCardExists(int port)
+{
+	if (port < 0 || port > 1)
+		return FALSE;
+
+	return root_mc_present[port];
+}
+
+int pollRootMemoryCardDevices(void)
+{
+	int result, sync, changed, start_ret;
+
+	if (root_mc_poll_active) {
+		sync = mcSync(1, NULL, &result);
+		if (sync == 0)
+			return FALSE;
+
+		root_mc_poll_active = 0;
+		root_mc_next_poll_time = Timer() + ROOT_MC_POLL_INTERVAL_MS;
+		if (sync < 0)
+			return FALSE;
+
+		changed = (root_mc_present[root_mc_poll_port] != memoryCardResultIndicatesPresent(result));
+		root_mc_present[root_mc_poll_port] = memoryCardResultIndicatesPresent(result);
+		root_mc_poll_port = (root_mc_poll_port + 1) & 1;
+		return changed;
+	}
+
+	if (Timer() < root_mc_next_poll_time)
+		return FALSE;
+
+	start_ret = mcGetInfo(root_mc_poll_port, 0, &root_mc_poll_type, &root_mc_poll_free, &root_mc_poll_format);
+	if (start_ret == 0)
+		root_mc_poll_active = 1;
+	else
+		root_mc_next_poll_time = Timer() + ROOT_MC_POLL_INTERVAL_MS;
+
+	return FALSE;
 }
 
 //------------------------------
@@ -1550,7 +1595,6 @@ int getDir(const char *path, FILEINFO *info)
 int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 {
 	int nfiles, i, j, ret, allow_usb_devices;
-	int mc_present[2];
 
 	size_valid = 0;
 	time_valid = 0;
@@ -1560,14 +1604,12 @@ int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 		if (USB_mass_scanned)  //if mass drives were scanned in earlier browsing
 			scan_USB_mass();   //then allow another scan here (timer dependent)
 		allow_usb_devices = ((cnfmode != USBD_IRX_CNF) && (cnfmode != USBKBD_IRX_CNF) && (cnfmode != USBMASS_IRX_CNF));
-		mc_present[0] = memoryCardExists(0);
-		mc_present[1] = memoryCardExists(1);
 
-		if (mc_present[0]) {
+		if (rootMemoryCardExists(0)) {
 			strcpy(files[nfiles].name, "mc0:");
 			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
 		}
-		if (mc_present[1]) {
+		if (rootMemoryCardExists(1)) {
 			strcpy(files[nfiles].name, "mc1:");
 			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
 		}
@@ -1577,11 +1619,11 @@ int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 		}
 
 #ifdef MMCE
-		if (mc_present[0]) {
+		if (rootMemoryCardExists(0)) {
 			strcpy(files[nfiles].name, "mmce0:");
 			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
 		}
-		if (mc_present[1]) {
+		if (rootMemoryCardExists(1)) {
 			strcpy(files[nfiles].name, "mmce1:");
 			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
 		}
