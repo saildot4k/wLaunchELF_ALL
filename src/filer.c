@@ -60,6 +60,7 @@ int mctype_PSx;  //dlanor: Needed for proper scaling of mcfreespace
 int vfreeSpace;  //flags validity of freespace value
 int browser_cut;
 int nclipFiles, nmarks, nparties;
+unsigned int clipIopResetGeneration;
 #ifdef DVRP
 int ndvrpparties;
 char mountedDVRPParty[MOUNT_LIMIT][MAX_NAME];
@@ -121,6 +122,9 @@ int host_ready = 0;
 int host_error = 0;
 int host_elflist = 0;
 int host_use_Bsl = 1;  //By default assume that host paths use backslash
+#endif
+#ifdef UDPFS
+int udpfs_dir_open_failed = 0;
 #endif
 u64 written_size;            //Used for pasting progress report
 u64 PasteTime;               //Used for pasting progress report
@@ -1018,6 +1022,15 @@ static int addRootUsbDeviceEntries(FILEINFO *files, int nfiles)
 	return nfiles;
 }
 
+static int memoryCardExists(int port)
+{
+	int dummy, ret;
+
+	mcGetInfo(port, 0, &dummy, &dummy, &dummy);
+	mcSync(0, NULL, &ret);
+	return (ret == -1 || ret == 0);
+}
+
 //------------------------------
 //endfunc addRootUsbDeviceEntries
 //--------------------------------------------------------------
@@ -1245,9 +1258,16 @@ int readUDPFS(const char *path, FILEINFO *info, int max)
 	iox_dirent_t dirent;
 	int fd, count = 0;
 
+	udpfs_dir_open_failed = 0;
 	initUDPFS();
-	if ((fd = fileXioDopen(path)) < 0)
+	if (host_error) {
+		udpfs_dir_open_failed = 1;
 		return 0;
+	}
+	if ((fd = fileXioDopen(path)) < 0) {
+		udpfs_dir_open_failed = 1;
+		return 0;
+	}
 
 	while (fileXioDread(fd, &dirent) > 0) {
 		if (strcmp(dirent.name, ".") && strcmp(dirent.name, "..")) {
@@ -1530,6 +1550,7 @@ int getDir(const char *path, FILEINFO *info)
 int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 {
 	int nfiles, i, j, ret, allow_usb_devices;
+	int mc_present[2];
 
 	size_valid = 0;
 	time_valid = 0;
@@ -1539,21 +1560,31 @@ int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 		if (USB_mass_scanned)  //if mass drives were scanned in earlier browsing
 			scan_USB_mass();   //then allow another scan here (timer dependent)
 		allow_usb_devices = ((cnfmode != USBD_IRX_CNF) && (cnfmode != USBKBD_IRX_CNF) && (cnfmode != USBMASS_IRX_CNF));
+		mc_present[0] = memoryCardExists(0);
+		mc_present[1] = memoryCardExists(1);
 
-		strcpy(files[nfiles].name, "mc0:");
-		files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
-		strcpy(files[nfiles].name, "mc1:");
-		files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
+		if (mc_present[0]) {
+			strcpy(files[nfiles].name, "mc0:");
+			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
+		}
+		if (mc_present[1]) {
+			strcpy(files[nfiles].name, "mc1:");
+			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
+		}
 
 		if (allow_usb_devices) {
 			nfiles = addRootUsbDeviceEntries(files, nfiles);
 		}
 
 #ifdef MMCE
-		strcpy(files[nfiles].name, "mmce0:");
-		files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
-		strcpy(files[nfiles].name, "mmce1:");
-		files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
+		if (mc_present[0]) {
+			strcpy(files[nfiles].name, "mmce0:");
+			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
+		}
+		if (mc_present[1]) {
+			strcpy(files[nfiles].name, "mmce1:");
+			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
+		}
 #endif
 
 #ifdef MX4SIO

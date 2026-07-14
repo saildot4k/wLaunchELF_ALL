@@ -56,6 +56,7 @@ extern int vfreeSpace;
 extern int browser_cut;
 extern int nclipFiles;
 extern int nmarks;
+extern unsigned int clipIopResetGeneration;
 extern u64 written_size;
 extern u64 PasteTime;
 extern int PSU_content;
@@ -75,6 +76,9 @@ extern FILEINFO clipFiles[MAX_ENTRY];
 
 #if defined(ETH) || defined(UDPFS)
 extern int host_elflist;
+#endif
+#ifdef UDPFS
+extern int udpfs_dir_open_failed;
 #endif
 
 int getDir(const char *path, FILEINFO *info);

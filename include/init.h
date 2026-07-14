@@ -5,6 +5,7 @@ void setInitPhaseComplete(void);
 void closeKeyboardIfOpened(void);
 
 void Reset(void);
+unsigned int getIopResetGeneration(void);
 void loadUsbModules(void);
 int ensureUsbKeyboardReady(void);
 #ifdef DS34

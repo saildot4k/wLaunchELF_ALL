@@ -94,6 +94,7 @@ static u8 have_basic_modules = 0;
 static u8 have_filexio_ready = 0;
 static u8 have_filexio_rwbuf_tuned = 0;
 static u8 have_mc_rpc_ready = 0;
+static unsigned int iop_reset_generation = 0;
 
 #define USB_MASS_BDMFS_SETTLE_MS 1000
 
@@ -159,6 +160,11 @@ static u8 done_setupPowerOff = 0;
 #define FILEXIO_RWBUF_NET_PRIMARY (128 * 1024)
 #define FILEXIO_RWBUF_NET_FALLBACK (64 * 1024)
 static u8 ps2kbd_opened = 0;
+
+unsigned int getIopResetGeneration(void)
+{
+	return iop_reset_generation;
+}
 
 /*
  * Tracks driver stacks proven loaded in the current IOP session.
@@ -1865,6 +1871,7 @@ int i, d;
 	DPRINTF(" [UDPTTY]: id=%d, ret=%d\n", i, d);
 #endif
 	ensureCoreIoStackReady();
+	iop_reset_generation++;
 	DPRINTF("RESET FINISHED\n");
 	//	setupPad();
 }
