@@ -12,6 +12,7 @@
 #define SOURCE_DEVICE_WAIT_TIMEOUT_MS 6000
 #define MX4SIO_POST_WRITE_SETTLE_MS 500
 #define ROOT_DEVICE_POLL_MS 1000
+#define ROOT_DEVICE_POLL_IDLE_MS 1000
 
 static int isHddBrowserPath(const char *path)
 {
@@ -976,6 +977,7 @@ int getFilePath(char *out, int cnfmode)
 	int font_height;
 	int iconbase, iconcolr;
 	u64 root_device_poll_time = 0;
+	u64 last_input_time;
 
 	elisa_failed = FALSE;  //set at failure to load font, cleared at each browser entry
 
@@ -1007,6 +1009,7 @@ int getFilePath(char *out, int cnfmode)
 		font_height = FONT_HEIGHT + 2;
 	rows = (Menu_end_y - Menu_start_y) / font_height;
 
+	last_input_time = Timer();
 	event = 1;  //event = initial entry
 	while (1) {
 
@@ -1017,6 +1020,7 @@ int getFilePath(char *out, int cnfmode)
 			if (new_pad) {
 				browser_pushed = TRUE;
 				event |= 2;  //event |= pad command
+				last_input_time = Timer();
 			}
 			if (new_pad & PAD_UP) {
 				if (browser_nfiles > 0) {
@@ -1448,7 +1452,7 @@ int getFilePath(char *out, int cnfmode)
 			browser_cd = TRUE;
 			browser_repos = TRUE;
 		}  //ends 'if(browser_up)'
-		if (!browser_cd && path[0] == '\0' && Timer() >= root_device_poll_time) {
+		if (!browser_cd && path[0] == '\0' && Timer() >= root_device_poll_time && Timer() >= last_input_time + ROOT_DEVICE_POLL_IDLE_MS) {
 			if (browser_nfiles > 0)
 				strcpy(cursorEntry, files[browser_sel].name);
 			else
