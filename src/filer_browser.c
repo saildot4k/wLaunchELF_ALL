@@ -10,8 +10,6 @@
 
 #define SOURCE_DEVICE_WAIT_INTERVAL_MS 1000
 #define SOURCE_DEVICE_WAIT_TIMEOUT_MS 6000
-#define MX4SIO_POST_WRITE_SETTLE_MS 500
-#define UDPFS_NOT_FOUND_POPUP_MS 3000
 
 static int isHddBrowserPath(const char *path)
 {
@@ -105,32 +103,6 @@ static void waitUntilTimer(u64 end_time)
 	}
 }
 
-static void showUdpfsNotFoundPopupAndReboot(void)
-{
-	const char *message = "UDPFS Server not found!";
-	int text_width, box_width, box_height;
-	int box_x, box_y;
-	u64 popup_start;
-
-	text_width = printXY(message, 0, 0, 0, FALSE, 0);
-	box_width = text_width + 16;
-	box_height = FONT_HEIGHT + 16;
-	box_x = (SCREEN_WIDTH - box_width) / 2;
-	box_y = (SCREEN_HEIGHT - box_height) / 2;
-
-	drawPopSprite(setting->color[COLOR_BACKGR], box_x, box_y, box_x + box_width, box_y + box_height);
-	drawFrame(box_x, box_y, box_x + box_width, box_y + box_height, setting->color[COLOR_FRAME]);
-	printXY(message, box_x + 8, box_y + 8, setting->color[COLOR_TEXT], TRUE, 0);
-	drawScr();
-
-	popup_start = Timer();
-	rebootIopAndReloadCoreStack();
-	waitUntilTimer(popup_start + UDPFS_NOT_FOUND_POPUP_MS);
-
-	drawSprite(setting->color[COLOR_BACKGR], box_x, box_y, box_x + box_width + 1, box_y + box_height + 1);
-	drawScr();
-}
-
 static int probeDirectory(const char *path)
 {
 	char probe_path[MAX_PATH];
@@ -147,13 +119,12 @@ static int probeDirectory(const char *path)
 	return TRUE;
 }
 
-static void settleMx4sioDestinationAfterWrite(const char *path)
+static void markMx4sioDestinationAfterWrite(const char *path)
 {
 	if (path == NULL || strncmp(path, "mx4sio", 6))
 		return;
 
-	waitUntilTimer(Timer() + MX4SIO_POST_WRITE_SETTLE_MS);
-	probeDirectory(path);
+	discardNextMx4sioRootListing(path);
 }
 
 static void makeDeviceRootPath(const char *path, char *root, int root_size)
@@ -1473,7 +1444,7 @@ int getFilePath(char *out, int cnfmode)
 			browser_cd = TRUE;
 			browser_repos = TRUE;
 		}  //ends 'if(browser_up)'
-		if (!browser_cd && path[0] == '\0' && pollRootMemoryCardDevices()) {
+		if (!browser_cd && path[0] == '\0' && !boot_show_all_devices && setting != NULL && setting->Hide_MCMMCE && pollRootMemoryCardDevices()) {
 			if (browser_nfiles > 0)
 				strcpy(cursorEntry, files[browser_sel].name);
 			else
@@ -1493,7 +1464,9 @@ int getFilePath(char *out, int cnfmode)
 #ifdef UDPFS
 			if (udpfs_dir_open_failed) {
 				udpfs_dir_open_failed = 0;
-				showUdpfsNotFoundPopupAndReboot();
+				strcpy(msg0, LNG(UDPFS_Server_not_found));
+				browser_pushed = FALSE;
+				rebootIopAndReloadCoreStackSilent();
 				path[0] = '\0';
 				browser_nfiles = setFileList(path, ext, files, cnfmode);
 			}
@@ -2017,7 +1990,7 @@ finished:
 	} else {
 		if (browser_cut)
 			nclipFiles = 0;
-		settleMx4sioDestinationAfterWrite(path);
+		markMx4sioDestinationAfterWrite(path);
 	}
 	browser_cd = TRUE;
 }

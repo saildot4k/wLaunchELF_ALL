@@ -244,7 +244,7 @@ void Reset(void);
 static void resetUsbMassScanState(void);
 static void resetUsbMassRuntimeState(void);
 static void resetDriverStackLoadTracking(void);
-static void resetRuntimeDeviceState(void);
+static void resetRuntimeDeviceState(int show_status);
 static void switchStorageDriverStack(int target_mode);
 static void switchBlockStorageStack(int target_mode);
 #if defined(ETH) && defined(UDPFS)
@@ -670,7 +670,7 @@ int load_udpfs(void)
 //---------------------------------------------------------------------------
 int reloadUdpfsModules(void)
 {
-	resetRuntimeDeviceState();
+	resetRuntimeDeviceState(TRUE);
 	load_udpfs_stack();
 	return have_udpfs_ioman;
 }
@@ -1334,12 +1334,13 @@ static void stopDs34Input(void)
 }
 #endif
 
-static void resetRuntimeDeviceState(void)
+static void resetRuntimeDeviceState(int show_status)
 {
 #ifdef DS34
 	stopDs34Input();
 #endif
-	showRebootingIopMsg();
+	if (show_status)
+		showRebootingIopMsg();
 	unmountAll();
 	Reset();
 #ifdef DS34
@@ -1352,7 +1353,12 @@ static void resetRuntimeDeviceState(void)
 
 void rebootIopAndReloadCoreStack(void)
 {
-	resetRuntimeDeviceState();
+	resetRuntimeDeviceState(TRUE);
+}
+
+void rebootIopAndReloadCoreStackSilent(void)
+{
+	resetRuntimeDeviceState(FALSE);
 }
 
 static void switchStorageDriverStack(int target_mode)
@@ -1363,7 +1369,7 @@ static void switchStorageDriverStack(int target_mode)
 
 	if (storage_driver_stack_mode != STORAGE_STACK_DEFAULT) {
 		DPRINTF("Switching storage driver stack (%d -> %d), resetting IOP\n", storage_driver_stack_mode, target_mode);
-		resetRuntimeDeviceState();
+		resetRuntimeDeviceState(TRUE);
 	}
 #else
 	(void)target_mode;
@@ -1387,7 +1393,7 @@ static void switchBlockStorageStack(int target_mode)
 
 	if (block_storage_stack_mode != BLOCK_STACK_NONE) {
 		DPRINTF("Switching block storage stack (%d -> %d), resetting IOP\n", block_storage_stack_mode, target_mode);
-		resetRuntimeDeviceState();
+		resetRuntimeDeviceState(TRUE);
 	}
 }
 
@@ -1399,7 +1405,7 @@ static void switchNetworkStack(int target_mode)
 
 	if (network_stack_mode != NETWORK_STACK_NONE) {
 		DPRINTF("Switching network stack (%d -> %d), resetting IOP\n", network_stack_mode, target_mode);
-		resetRuntimeDeviceState();
+		resetRuntimeDeviceState(TRUE);
 	}
 	network_stack_mode = target_mode;
 }
@@ -1430,7 +1436,7 @@ static void switchPsxHddDriverStack(int use_dvr_stack)
 		DPRINTF("Switching PSX HDD stack (dvr_hdd0:/ -> hdd0:/), resetting IOP\n");
 	}
 
-	resetRuntimeDeviceState();
+	resetRuntimeDeviceState(TRUE);
 }
 #endif
 

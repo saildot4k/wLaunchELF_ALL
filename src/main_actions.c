@@ -412,12 +412,10 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 		}
 		return;
 	} else if (!stricmp(path, setting->Misc_PS2Browser)) {
-		Exit(0);
-		//There has been a major change in the code for calling PS2Browser
-		//The method above is borrowed from PS2MP3. It's independent of ELF loader
-		//The method below was used earlier, but causes reset with new ELF loader
-		//party[0]=0;
-		//strcpy(fullpath,"rom0:OSDSYS");
+		char *args[1] = {"BootBrowser"};
+
+		CleanUpForExec();
+		ExecOSD(1, args);
 #ifdef ETH
 	} else if (!stricmp(path, setting->Misc_PS2Net)) {
 		ctx->main_msg[0] = 0;

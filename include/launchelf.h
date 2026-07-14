@@ -303,6 +303,7 @@ typedef struct
 	int reboot_iop_elf_load;
 	int virtual_keyboard_layout;
 	int Hide_Hdd;
+	int Hide_MCMMCE;
 	int Show_Titles;
 	int PathPad_Lock;
 	int PSU_HugeNames;
@@ -330,6 +331,7 @@ extern int TV_mode;
 extern int swapKeys;
 extern int cdmode;      //Last detected disc type
 extern u8 console_is_PSX;
+extern u8 boot_show_all_devices;
 extern char if_conf[IPCONF_MAX_LEN];
 extern int if_conf_len;
 extern char ip[16];
@@ -458,6 +460,7 @@ int setupPad(void);
 int readpad(void);
 int readpad_no_KB(void);
 int readpad_noRepeat(void);
+void clearPadPressState(void);
 void waitPadReady(int port, int slot);
 void waitAnyPadReady(void);
 

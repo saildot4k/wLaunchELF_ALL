@@ -528,6 +528,7 @@ void saveConfigToPath(char *mainMsg, char *CNF, const char *target_path)
 	        "REBOOT_IOP_ELFLOAD = %d\r\n"
 	        "VirtualKeyboardLayout = %s\r\n"
 	        "Hide_Hdd = %d\r\n"
+	        "Hide_MCMMCE = %d\r\n"
 	        "USBKBD_USED = %d\r\n"
 	        "USBKBD_FILE = %s\r\n"
 	        "KBDMAP_FILE = %s\r\n"
@@ -554,6 +555,7 @@ void saveConfigToPath(char *mainMsg, char *CNF, const char *target_path)
 	        setting->reboot_iop_elf_load,
 	        getVirtualKeyboardLayoutConfigName(setting->virtual_keyboard_layout),
 	        setting->Hide_Hdd,
+	        setting->Hide_MCMMCE,
 	        setting->usbkbd_used,      //USBKBD_USED
 	        setting->usbkbd_file,      //USBKBD_FILE
 	        setting->kbdmap_file,      //KBDMAP_FILE
@@ -733,6 +735,7 @@ void initConfig(void)
 	setting->reboot_iop_elf_load = DEF_STARTUP_RESET_IOP_ELFLOAD;
 	setting->virtual_keyboard_layout = DEF_VIRTUAL_KEYBOARD_LAYOUT;
 	setting->Hide_Hdd = DEF_HIDE_HDD;
+	setting->Hide_MCMMCE = DEF_HIDE_MCMMCE;
 	setting->Show_Titles = DEF_SHOW_TITLES;
 	setting->PathPad_Lock = DEF_PATHPAD_LOCK;
 	setting->PSU_HugeNames = DEF_PSU_HUGENAMES;
@@ -893,6 +896,8 @@ int loadConfig(char *mainMsg, char *CNF)
 		} else if (!strcmp(name, "Hide_Hdd")) {
 			int hide_hdd = atoi(value);
 			setting->Hide_Hdd = (hide_hdd >= 0 && hide_hdd < HIDE_HDD_COUNT) ? hide_hdd : DEF_HIDE_HDD;
+		} else if (!strcmp(name, "Hide_MCMMCE")) {
+			setting->Hide_MCMMCE = (atoi(value) != 0);
 		} else if (!strcmp(name, "USBKBD_FILE"))
 			strcpy(setting->usbkbd_file, value);
 		else if (!strcmp(name, "KBDMAP_FILE"))

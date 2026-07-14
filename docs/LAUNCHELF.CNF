@@ -232,6 +232,14 @@ VirtualKeyboardLayout = qwerty
 # ----------------------------------------------------------------------
 Hide_Hdd = 5
 # ----------------------------------------------------------------------
+# Hide_MCMMCE controls whether FileBrowser hides mc0/mc1 and mmce0/mmce1
+# when their matching memory card slot is not detected. This is a
+# config-only option and is not exposed in the UI.
+# 0 => always show mc0/mc1/mmce0/mmce1 (default if omitted)
+# 1 => hide mc0/mmce0 or mc1/mmce1 when the matching card is absent
+# ----------------------------------------------------------------------
+Hide_MCMMCE = 0
+# ----------------------------------------------------------------------
 # USBKBD_USED allows you to disable initialization of the USB keyboard
 # driver. This is mainly useful when you need to test some specific
 # software without any USB drivers active. For example, when testing

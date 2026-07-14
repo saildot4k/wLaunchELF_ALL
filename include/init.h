@@ -16,6 +16,7 @@ void closeAllAndPoweroff(void);
 void startKbd(void);
 void ensureCoreIoStackReady(void);
 void rebootIopAndReloadCoreStack(void);
+void rebootIopAndReloadCoreStackSilent(void);
 #ifdef XFROM
 int loadSecrSifModule(void);
 #endif
