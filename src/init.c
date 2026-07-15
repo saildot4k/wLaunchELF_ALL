@@ -439,10 +439,10 @@ static int load_ps2hdd_stack(int with_ata_bd)
 	                       "-n"
 	                       "\0"
 	                       "20";
-	/* Limit simultaneously mounted PFS partitions for ATA+APA compatibility. */
+	/* Allow up to four simultaneously mounted PFS partitions. */
 	static char pfsarg[] = "-m"
 	                       "\0"
-	                       "2"
+	                       "4"
 	                       "\0"
 	                       "-o"
 	                       "\0"
@@ -683,11 +683,11 @@ static void load_ps2dvr(void)
 {
 	int ret, ID __attribute__((unused));
 
-	if (!have_dvrdrv || !have_dvrfile || !have_ps2atad || !have_ps2hdd || !have_ps2fs)
+	if (!have_dvrdrv || !have_dvrfile || !have_ps2hdd || !have_ps2fs)
 		showLoadingModulesMsg("dvr");
 
-	if (!load_ps2atad_stack()) {
-		DPRINTF(" [DVR]: skipping load because ATAD/HDD stack failed to initialize\n");
+	if (!load_ps2hdd_stack(1)) {
+		DPRINTF(" [DVR]: skipping load because HDD stack failed to initialize\n");
 		return;
 	}
 
@@ -1424,7 +1424,7 @@ static void switchPsxHddDriverStack(int use_dvr_stack)
 	} else {
 		if (have_HDD_modules)
 			return;
-		if (!have_DVRP_HDD_modules && !have_ps2atad && !have_dvrdrv && !have_dvrfile)
+		if (!have_DVRP_HDD_modules && !have_dvrdrv && !have_dvrfile)
 			return;
 		DPRINTF("Loading PSX APA HDD stack without resetting IOP\n");
 	}
@@ -1702,8 +1702,8 @@ int loadDVRPHddModules(void)
 		if (have_DVRP_HDD_modules) {
 			sceCdNoticeGameStart(0, NULL);
 		} else {
-			DPRINTF(" [DVR_HDD]: stack incomplete (ATAD=%d HDD=%d FS=%d DVRDRV=%d DVRFILE=%d)\n",
-			        have_ps2atad, have_ps2hdd, have_ps2fs, have_dvrdrv, have_dvrfile);
+			DPRINTF(" [DVR_HDD]: stack incomplete (HDD=%d FS=%d DVRDRV=%d DVRFILE=%d)\n",
+			        have_ps2hdd, have_ps2fs, have_dvrdrv, have_dvrfile);
 		}
 	}
 	return have_DVRP_HDD_modules;
