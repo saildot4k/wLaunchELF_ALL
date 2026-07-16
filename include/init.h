@@ -17,9 +17,8 @@ void startKbd(void);
 void ensureCoreIoStackReady(void);
 void rebootIopAndReloadCoreStack(void);
 void rebootIopAndReloadCoreStackSilent(void);
-#ifdef XFROM
 int loadSecrSifModule(void);
-#endif
+int prepareExploitSignerIop(void);
 
 #ifdef ETH
 void loadNetModules(void);

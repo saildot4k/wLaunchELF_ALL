@@ -1,6 +1,7 @@
 #include "launchelf.h"
 #include "init.h"
 #include <unistd.h>
+#include <iopcontrol_special.h>
 
 #define IMPORT_BIN2C(_n) \
     extern u8 _n[];   \
@@ -136,8 +137,9 @@ static u8 have_ata_bd = 0;
 #ifdef XFROM
 static u8 have_Flash_modules = 0;
 static u8 xfromserv_loaded = 0;
-static u8 have_secrsif = 0;
 #endif
+static u8 have_secrsif = 0;
+static u8 have_exploit_signer_iop = 0;
 #ifdef MMCE
 static u8 have_mmce = 0;
 #endif
@@ -241,6 +243,7 @@ void ensureCoreIoStackReady(void);
 void setupPowerOff(void);
 void startKbd(void);
 void Reset(void);
+static void clearIopModuleState(void);
 static void resetUsbMassScanState(void);
 static void resetUsbMassRuntimeState(void);
 static void resetDriverStackLoadTracking(void);
@@ -549,11 +552,8 @@ static int load_ps2atad_stack(void)
 //endfunc load_ps2atad_stack
 //---------------------------------------------------------------------------
 #endif
-#ifdef XFROM
-IMPORT_BIN2C(extflash_irx);
-IMPORT_BIN2C(xfromman_irx);
-IMPORT_BIN2C(xfromserv_irx);
 IMPORT_BIN2C(secrsif_irx);
+IMPORT_BIN2C(exploit_ioprp_img);
 int loadSecrSifModule(void)
 {
 	int ID __attribute__((unused)), ret;
@@ -570,6 +570,72 @@ int loadSecrSifModule(void)
 //------------------------------
 //endfunc loadSecrSifModule
 //---------------------------------------------------------------------------
+int prepareExploitSignerIop(void)
+{
+#ifdef NO_IOP_RESET
+	return 0;
+#else
+	int ret;
+
+	if (have_exploit_signer_iop) {
+		ensureCoreIoStackReady();
+#ifdef DS34
+		loadDs34InputModules();
+#endif
+		setupPad();
+		return loadSecrSifModule();
+	}
+
+#ifdef DS34
+	stopDs34Input();
+#endif
+	closeKeyboardIfOpened();
+	unmountAll();
+	showRebootingIopMsg();
+
+	SifInitRpc(0);
+	ret = SifIopRebootBuffer(exploit_ioprp_img, size_exploit_ioprp_img);
+	if (ret <= 0) {
+		SifInitRpc(0);
+		SifLoadFileInit();
+		initsbv_patches();
+		clearIopModuleState();
+		iop_reset_generation++;
+		ensureCoreIoStackReady();
+#ifdef DS34
+		loadDs34InputModules();
+#endif
+		setupPad();
+		return 0;
+	}
+	while (!SifIopSync()) {
+	};
+	SifInitRpc(0);
+	SifLoadFileInit();
+	initsbv_patches();
+
+	clearIopModuleState();
+	iop_reset_generation++;
+	ensureCoreIoStackReady();
+#ifdef DS34
+	loadDs34InputModules();
+#endif
+	setupPad();
+	if (!loadSecrSifModule())
+		return 0;
+
+	have_exploit_signer_iop = 1;
+	DPRINTF(" [EXPLOIT_IOP]: signer IOP ready\n");
+	return 1;
+#endif
+}
+//------------------------------
+//endfunc prepareExploitSignerIop
+//---------------------------------------------------------------------------
+#ifdef XFROM
+IMPORT_BIN2C(extflash_irx);
+IMPORT_BIN2C(xfromman_irx);
+IMPORT_BIN2C(xfromserv_irx);
 static void load_pflash(void)
 {
 	int ID __attribute__((unused)), ret;
@@ -1781,21 +1847,8 @@ int ensureUsbKeyboardReady(void)
 //------------------------------
 //endfunc ensureUsbKeyboardReady
 //---------------------------------------------------------------------------
-// reboot IOP (original source by Hermes in BOOT.c - cogswaploader)
-// dlanor: but changed now, as the original was badly bugged
-void Reset()
+static void clearIopModuleState(void)
 {
-#ifndef NO_IOP_RESET
-	SifInitRpc(0);
-	while (!SifIopReset("", 0)) {
-	};
-	while (!SifIopSync()) {
-	};
-	SifInitRpc(0);
-#endif
-	SifLoadFileInit();
-	initsbv_patches();
-
 	have_basic_modules = 0;
 	have_filexio_ready = 0;
 	have_filexio_rwbuf_tuned = 0;
@@ -1841,11 +1894,12 @@ void Reset()
 	ps2dev9_loaded = 0;
 	done_setupPowerOff = 0;
 	ps2kbd_opened = 0;
-	#ifdef XFROM
-		have_Flash_modules = 0;
-		xfromserv_loaded = 0;
-		have_secrsif = 0;
-	#endif
+#ifdef XFROM
+	have_Flash_modules = 0;
+	xfromserv_loaded = 0;
+#endif
+	have_secrsif = 0;
+	have_exploit_signer_iop = 0;
 #ifdef DVRP
 	have_DVRP_HDD_modules = 0;
 	have_ps2atad = 0;
@@ -1854,6 +1908,26 @@ void Reset()
 #endif
 	resetUsbMassRuntimeState();
 	invalidatePartitionCaches();
+}
+//------------------------------
+//endfunc clearIopModuleState
+//---------------------------------------------------------------------------
+// reboot IOP (original source by Hermes in BOOT.c - cogswaploader)
+// dlanor: but changed now, as the original was badly bugged
+void Reset()
+{
+#ifndef NO_IOP_RESET
+	SifInitRpc(0);
+	while (!SifIopReset("", 0)) {
+	};
+	while (!SifIopSync()) {
+	};
+	SifInitRpc(0);
+#endif
+	SifLoadFileInit();
+	initsbv_patches();
+
+	clearIopModuleState();
 
 #ifdef POWERPC_UART
 int i, d;

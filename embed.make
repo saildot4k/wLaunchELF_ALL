@@ -31,6 +31,18 @@ EXTFLASH_SOURCE = iop/__precompiled/extflash.irx
 XFROMMAN_SOURCE = iop/__precompiled/xfromman.irx
 XFORMSERV_SOURCE = $(PS2SDK)/iop/irx/xfromserv.irx
 SECRSIF_SOURCE = $(PS2SDK)/iop/irx/secrsif.irx
+EXPLOIT_IOPRP_SOURCE := thirdparty/KELFbinder-UMCS-main/iop/IOPRP_LTS.IMG
+ifeq ($(wildcard $(SECRSIF_SOURCE)),)
+  ifneq ($(wildcard thirdparty/KELFbinder-UMCS-main/iop/secrsif.irx),)
+    SECRSIF_SOURCE = thirdparty/KELFbinder-UMCS-main/iop/secrsif.irx
+  endif
+endif
+ifeq ($(wildcard $(SECRSIF_SOURCE)),)
+  $(error Missing secrsif.irx. Update PS2SDK/toolchain container for exploit MagicGate signer)
+endif
+ifeq ($(wildcard $(EXPLOIT_IOPRP_SOURCE)),)
+  $(error Missing $(EXPLOIT_IOPRP_SOURCE). Required for exploit MagicGate signer)
+endif
 ifeq ($(XFROM),1)
   ifneq ($(wildcard $(PS2SDK)/iop/irx/extflash.irx),)
     EXTFLASH_SOURCE = $(PS2SDK)/iop/irx/extflash.irx
@@ -38,16 +50,8 @@ ifeq ($(XFROM),1)
   ifneq ($(wildcard $(PS2SDK)/iop/irx/xfromman.irx),)
     XFROMMAN_SOURCE = $(PS2SDK)/iop/irx/xfromman.irx
   endif
-  ifeq ($(wildcard $(SECRSIF_SOURCE)),)
-    ifneq ($(wildcard thirdparty/KELFbinder-UMCS-main/iop/secrsif.irx),)
-      SECRSIF_SOURCE = thirdparty/KELFbinder-UMCS-main/iop/secrsif.irx
-    endif
-  endif
   ifeq ($(wildcard $(XFORMSERV_SOURCE)),)
     $(error Missing xfromserv.irx. Update PS2SDK/toolchain container for XFROM support)
-  endif
-  ifeq ($(wildcard $(SECRSIF_SOURCE)),)
-    $(error Missing secrsif.irx. Update PS2SDK/toolchain container for XFROM support)
   endif
 endif
 
@@ -370,6 +374,9 @@ $(EE_ASM_DIR)xfromserv_irx.s: $(XFORMSERV_SOURCE) | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)secrsif_irx.s: $(SECRSIF_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ secrsif_irx
+
+$(EE_ASM_DIR)exploit_ioprp_img.s: $(EXPLOIT_IOPRP_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_ioprp_img
 
 $(EE_ASM_DIR)exploit_system_xlf.s: $(EXPLOIT_SYSTEM_XLF_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ exploit_system_xlf

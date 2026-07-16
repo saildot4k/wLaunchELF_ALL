@@ -38,7 +38,8 @@ EE_OBJS = main.o main_actions.o main_boot.o main_modules.o main_menu.o main_info
 	exploit_system_xlf.o exploit_xsystem_xlf.o \
 	exploit_osdsys_kernel.o exploit_osd110_kernel.o \
 	exploit_jpn_sys.o exploit_usa_sys.o exploit_eur_sys.o exploit_chn_sys.o \
-	exploit_list_icn.o exploit_copy_icn.o exploit_del_icn.o
+	exploit_list_icn.o exploit_copy_icn.o exploit_del_icn.o \
+	secrsif_irx.o exploit_ioprp_img.o
 
 EE_INCS := -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include -Iinclude
 
@@ -88,19 +89,24 @@ else
   endif
 endif
 SECR_LIB_SOURCE := thirdparty/ps2sdk-master/ee/rpc/secr/src/libsecr.c
+IOPREBOOT_INC_DIR := $(PS2SDK)/ee/iopreboot/include
+ifneq ($(wildcard thirdparty/ps2sdk-master/ee/iopreboot/include/iopcontrol_special.h),)
+    IOPREBOOT_INC_DIR := thirdparty/ps2sdk-master/ee/iopreboot/include
+endif
+EE_INCS += -Ithirdparty/ps2sdk-master/ee/rpc/secr/include -Ithirdparty/ps2sdk-master/common/include -I$(IOPREBOOT_INC_DIR)
+EE_LIBS += -liopreboot
+ifneq ($(wildcard $(PS2SDK)/ee/lib/libsecr.a),)
+    EE_LIBS += -lsecr
+else ifneq ($(wildcard $(SECR_LIB_SOURCE)),)
+    EE_OBJS += libsecr.o
+else
+    $(error Missing libsecr. Update PS2SDK or provide thirdparty/ps2sdk-master)
+endif
 
 ifeq ($(XFROM),1)
     HAS_XFROM = -XFROM
     EE_CFLAGS += -DXFROM
-    EE_INCS += -Ithirdparty/ps2sdk-master/ee/rpc/secr/include -Ithirdparty/ps2sdk-master/common/include
-    EE_OBJS += xfromman_irx.o xfromserv_irx.o extflash_irx.o secrsif_irx.o
-    ifneq ($(wildcard $(PS2SDK)/ee/lib/libsecr.a),)
-        EE_LIBS += -lsecr
-    else ifneq ($(wildcard $(SECR_LIB_SOURCE)),)
-        EE_OBJS += libsecr.o
-    else
-        $(error Missing libsecr. Update PS2SDK or provide thirdparty/ps2sdk-master)
-    endif
+    EE_OBJS += xfromman_irx.o xfromserv_irx.o extflash_irx.o
 endif
 
 ifeq ($(DS34),1)
