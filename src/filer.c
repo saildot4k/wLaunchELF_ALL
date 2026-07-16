@@ -1789,6 +1789,8 @@ int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 		files[nfiles++].stats.AttrFile = sceMcFileAttrFile;
 		strcpy(files[nfiles].name, LNG(OSDSYS));
 		files[nfiles++].stats.AttrFile = sceMcFileAttrFile;
+		strcpy(files[nfiles].name, LNG(Exploit_Installer));
+		files[nfiles++].stats.AttrFile = sceMcFileAttrFile;
 		strcpy(files[nfiles].name, LNG(HddManager));
 		files[nfiles++].stats.AttrFile = sceMcFileAttrFile;
 		strcpy(files[nfiles].name, LNG(TextEditor));

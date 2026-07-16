@@ -493,6 +493,7 @@ void saveConfigToPath(char *mainMsg, char *CNF, const char *target_path)
 	        "Misc_About_uLE = %s\r\n"
 	        "Misc_Show_Build_Info = %s\r\n"
 	        "Misc_OSDSYS = %s\r\n"
+	        "Misc_Exploit_Installer = %s\r\n"
 	        "Misc_Reboot_IOP = %s\r\n"
 	        "%n",  // %n causes NO output, but only a measurement
 	        setting->Misc,
@@ -509,6 +510,7 @@ void saveConfigToPath(char *mainMsg, char *CNF, const char *target_path)
 	        setting->Misc_About_uLE + i,
 	        setting->Misc_Show_Build_Info + i,
 	        setting->Misc_OSDSYS + i,
+	        setting->Misc_Exploit_Installer + i,
 	        setting->Misc_Reboot_IOP + i,
 	        &CNF_step  // This variable measures the size of sprintf data
 	        );
@@ -689,6 +691,7 @@ void initConfig(void)
 	sprintf(setting->Misc_About_uLE, "%s/%s", LNG_DEF(MISC), LNG_DEF(About_uLE));
 	sprintf(setting->Misc_Show_Build_Info, "%s/%s", LNG(MISC), LNG(Build_Info));
 	sprintf(setting->Misc_OSDSYS, "%s/%s", LNG_DEF(MISC), LNG_DEF(OSDSYS));
+	sprintf(setting->Misc_Exploit_Installer, "%s/%s", LNG_DEF(MISC), LNG_DEF(Exploit_Installer));
 	sprintf(setting->Misc_Reboot_IOP, "%s/%s", LNG_DEF(MISC), LNG_DEF(Reboot_IOP));
 
 	for (i = 0; i < SETTING_LK_COUNT; i++) {
@@ -863,6 +866,8 @@ int loadConfig(char *mainMsg, char *CNF)
 				sprintf(setting->Misc_Show_Build_Info, "%s%s", setting->Misc, value);
 			else if (!strcmp(name, "Misc_OSDSYS"))
 				sprintf(setting->Misc_OSDSYS, "%s%s", setting->Misc, value);
+			else if (!strcmp(name, "Misc_Exploit_Installer"))
+				sprintf(setting->Misc_Exploit_Installer, "%s%s", setting->Misc, value);
 			else if (!strcmp(name, "Misc_Reboot_IOP"))
 				sprintf(setting->Misc_Reboot_IOP, "%s%s", setting->Misc, value);
 			//----------

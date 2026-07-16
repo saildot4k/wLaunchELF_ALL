@@ -278,6 +278,7 @@ typedef struct
 	char Misc_About_uLE[64];
 	char Misc_Show_Build_Info[64];
 	char Misc_OSDSYS[64];
+	char Misc_Exploit_Installer[64];
 	char Misc_Reboot_IOP[64];
 	char usbkbd_file[MAX_PATH];
 	char kbdmap_file[MAX_PATH];

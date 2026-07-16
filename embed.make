@@ -51,6 +51,52 @@ ifeq ($(XFROM),1)
   endif
 endif
 
+EXPLOIT_SYSTEM_XLF_SOURCE := exploits/SYSTEM.XLF
+EXPLOIT_XSYSTEM_XLF_SOURCE := exploits/XSYSTEM.XLF
+EXPLOIT_OSDSYS_KERNEL_SOURCE := exploits/OSDSYS.KERNEL
+EXPLOIT_OSD110_KERNEL_SOURCE := exploits/OSD110.KERNEL
+EXPLOIT_JPN_SYS_SOURCE := exploits/JPN.sys
+EXPLOIT_USA_SYS_SOURCE := exploits/USA.sys
+EXPLOIT_EUR_SYS_SOURCE := exploits/EUR.sys
+EXPLOIT_CHN_SYS_SOURCE := exploits/CHN.sys
+EXPLOIT_LIST_ICN_SOURCE := exploits/list.icn
+EXPLOIT_COPY_ICN_SOURCE := exploits/copy.icn
+EXPLOIT_DEL_ICN_SOURCE := exploits/del.icn
+
+ifeq ($(wildcard $(EXPLOIT_SYSTEM_XLF_SOURCE)),)
+  $(error Missing $(EXPLOIT_SYSTEM_XLF_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_XSYSTEM_XLF_SOURCE)),)
+  $(error Missing $(EXPLOIT_XSYSTEM_XLF_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_OSDSYS_KERNEL_SOURCE)),)
+  $(error Missing $(EXPLOIT_OSDSYS_KERNEL_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_OSD110_KERNEL_SOURCE)),)
+  $(error Missing $(EXPLOIT_OSD110_KERNEL_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_JPN_SYS_SOURCE)),)
+  $(error Missing $(EXPLOIT_JPN_SYS_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_USA_SYS_SOURCE)),)
+  $(error Missing $(EXPLOIT_USA_SYS_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_EUR_SYS_SOURCE)),)
+  $(error Missing $(EXPLOIT_EUR_SYS_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_CHN_SYS_SOURCE)),)
+  $(error Missing $(EXPLOIT_CHN_SYS_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_LIST_ICN_SOURCE)),)
+  $(error Missing $(EXPLOIT_LIST_ICN_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_COPY_ICN_SOURCE)),)
+  $(error Missing $(EXPLOIT_COPY_ICN_SOURCE))
+endif
+ifeq ($(wildcard $(EXPLOIT_DEL_ICN_SOURCE)),)
+  $(error Missing $(EXPLOIT_DEL_ICN_SOURCE))
+endif
+
 XPARAM_SOURCE :=
 XPARAM_AUTOGEN := iop/__generated/xparam.irx
 XPARAM_SDK_ROOT :=
@@ -324,6 +370,39 @@ $(EE_ASM_DIR)xfromserv_irx.s: $(XFORMSERV_SOURCE) | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)secrsif_irx.s: $(SECRSIF_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ secrsif_irx
+
+$(EE_ASM_DIR)exploit_system_xlf.s: $(EXPLOIT_SYSTEM_XLF_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_system_xlf
+
+$(EE_ASM_DIR)exploit_xsystem_xlf.s: $(EXPLOIT_XSYSTEM_XLF_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_xsystem_xlf
+
+$(EE_ASM_DIR)exploit_osdsys_kernel.s: $(EXPLOIT_OSDSYS_KERNEL_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_osdsys_kernel
+
+$(EE_ASM_DIR)exploit_osd110_kernel.s: $(EXPLOIT_OSD110_KERNEL_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_osd110_kernel
+
+$(EE_ASM_DIR)exploit_jpn_sys.s: $(EXPLOIT_JPN_SYS_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_jpn_sys
+
+$(EE_ASM_DIR)exploit_usa_sys.s: $(EXPLOIT_USA_SYS_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_usa_sys
+
+$(EE_ASM_DIR)exploit_eur_sys.s: $(EXPLOIT_EUR_SYS_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_eur_sys
+
+$(EE_ASM_DIR)exploit_chn_sys.s: $(EXPLOIT_CHN_SYS_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_chn_sys
+
+$(EE_ASM_DIR)exploit_list_icn.s: $(EXPLOIT_LIST_ICN_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_list_icn
+
+$(EE_ASM_DIR)exploit_copy_icn.s: $(EXPLOIT_COPY_ICN_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_copy_icn
+
+$(EE_ASM_DIR)exploit_del_icn.s: $(EXPLOIT_DEL_ICN_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ exploit_del_icn
 
 #---{ USB }---#
 

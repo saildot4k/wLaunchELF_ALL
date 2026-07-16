@@ -366,6 +366,8 @@ static void updateLocalizedMiscPaths(void)
 						sprintf(setting->LK_Path[i], "%s/%s", LNG(MISC), LNG(Build_Info));
 					else if (isMiscLaunchNameAlias(tmp + 1, setting->Misc_OSDSYS, LNG_DEF(OSDSYS)))
 						sprintf(setting->LK_Path[i], "%s/%s", LNG(MISC), LNG(OSDSYS));
+					else if (isMiscLaunchNameAlias(tmp + 1, setting->Misc_Exploit_Installer, LNG_DEF(Exploit_Installer)))
+						sprintf(setting->LK_Path[i], "%s/%s", LNG(MISC), LNG(Exploit_Installer));
 					else if (isMiscLaunchNameAlias(tmp + 1, setting->Misc_Reboot_IOP, LNG_DEF(Reboot_IOP)))
 						sprintf(setting->LK_Path[i], "%s/%s", LNG(MISC), LNG(Reboot_IOP));
 				}  // end if Misc
@@ -387,6 +389,7 @@ static void updateLocalizedMiscPaths(void)
 	sprintf(setting->Misc_About_uLE, "%s/%s", LNG(MISC), LNG(About_uLE));
 	sprintf(setting->Misc_Show_Build_Info, "%s/%s", LNG(MISC), LNG(Build_Info));
 	sprintf(setting->Misc_OSDSYS, "%s/%s", LNG(MISC), LNG(OSDSYS));
+	sprintf(setting->Misc_Exploit_Installer, "%s/%s", LNG(MISC), LNG(Exploit_Installer));
 	sprintf(setting->Misc_Reboot_IOP, "%s/%s", LNG(MISC), LNG(Reboot_IOP));
 }
 //---------------------------------------------------------------------------

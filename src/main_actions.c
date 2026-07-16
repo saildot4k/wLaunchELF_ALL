@@ -4,6 +4,7 @@
 #include "launchelf.h"
 #include "init.h"
 #include "main_actions.h"
+#include "main_exploit_installer.h"
 #include "main_gameid.h"
 #include "main_history.h"
 #include "main_info_screens.h"
@@ -452,6 +453,9 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 		return;
 	} else if (!stricmp(path, setting->Misc_Show_Build_Info)) {
 		Show_build_info();
+		return;
+	} else if (!stricmp(path, setting->Misc_Exploit_Installer)) {
+		ShowExploitInstaller(ctx);
 		return;
 	} else if (!stricmp(path, setting->Misc_Reboot_IOP)) {
 		ctx->main_msg[0] = 0;
