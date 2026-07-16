@@ -31,7 +31,7 @@ EXTFLASH_SOURCE = iop/__precompiled/extflash.irx
 XFROMMAN_SOURCE = iop/__precompiled/xfromman.irx
 XFORMSERV_SOURCE = $(PS2SDK)/iop/irx/xfromserv.irx
 SECRSIF_SOURCE = $(PS2SDK)/iop/irx/secrsif.irx
-EXPLOIT_IOPRP_SOURCE := thirdparty/KELFbinder-UMCS-main/iop/IOPRP_LTS.IMG
+EXPLOIT_IOPRP_SOURCE := exploits/IOPRP_LTS.IMG
 ifeq ($(wildcard $(SECRSIF_SOURCE)),)
   ifneq ($(wildcard thirdparty/KELFbinder-UMCS-main/iop/secrsif.irx),)
     SECRSIF_SOURCE = thirdparty/KELFbinder-UMCS-main/iop/secrsif.irx
