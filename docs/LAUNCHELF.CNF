@@ -40,6 +40,7 @@ Misc_PS2Browser = PS2Browser
 Misc_PS2Net = PS2Net
 Misc_PS2PowerOff = PS2PowerOff
 Misc_HddManager = HddManager
+Misc_Exploit_Installer = MC Exploit Installer
 Misc_TextEditor = TextEditor
 Misc_Configure = Configure
 Misc_ShowFont = ShowFont
@@ -47,7 +48,6 @@ Misc_Debug_Info = Debug Info
 Misc_About_uLE = About uLE
 Misc_Show_Build_Info = BuildInfo
 Misc_OSDSYS = OSDSYS
-Misc_Exploit_Installer = Exploit Installer
 Misc_Reboot_IOP = Reboot IOP
 # ----------------------------------------------------------------------
 # Next follows the 12 (as yet) launching links, here kept in traditional
