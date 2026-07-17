@@ -61,53 +61,10 @@ static void get_early_model_name(const char *romver, char *model, size_t model_l
 		snprintf(model, model_len, "Unknown");
 }
 
-static const char *romver_machine_type_name(const char *romver)
-{
-	if (romver == NULL || romver[5] == '\0')
-		return "Console";
-
-	switch (romver[5]) {
-		case 'C':
-			return console_is_PSX ? "DESR" : "CEX";
-		case 'D':
-			return "DEX";
-		case 'T':
-			return (romver[6] == 'Z') ? "COH" : "TOOL";
-		default:
-			return "Console";
-	}
-}
-
-static const char *romver_region_name(const char *romver)
-{
-	if (romver == NULL || romver[4] == '\0')
-		return "";
-
-	switch (romver[4]) {
-		case 'J':
-			return "Japan";
-		case 'A':
-			return "USA";
-		case 'H':
-			return "Asia";
-		case 'E':
-			return "Europe";
-		case 'C':
-			return "China";
-		default:
-			return "";
-	}
-}
-
 static void get_model_fallback_name(const char *romver, char *model, size_t model_len)
 {
-	const char *type = romver_machine_type_name(romver);
-	const char *region = romver_region_name(romver);
-
-	if (region[0] != '\0')
-		snprintf(model, model_len, "%s %s", type, region);
-	else
-		snprintf(model, model_len, "%s", type);
+	(void)romver;
+	snprintf(model, model_len, "Unknown");
 }
 
 int IsDtlConsoleIdentity(const char *romver, const char *model)
