@@ -19,6 +19,9 @@ static int getHideHddMode(void)
 	if (boot_show_all_devices)
 		return HIDE_HDD_SHOW_ALL;
 
+	if (shouldHideHddAtaDevices())
+		return HIDE_HDD_HDD01_ATA01;
+
 	return (mode >= 0 && mode < HIDE_HDD_COUNT) ? mode : HIDE_HDD_HDD1_ATA1;
 }
 
