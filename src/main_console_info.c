@@ -67,6 +67,21 @@ static void get_model_fallback_name(const char *romver, char *model, size_t mode
 	snprintf(model, model_len, "Unknown");
 }
 
+static void initialize_model_cdvd_rpc(void)
+{
+	u8 mecha_version[3];
+	u32 stat = 0;
+	int i;
+
+	loadCdModules();
+	sceCdInit(SCECdINoD);
+
+	for (i = 0; i <= 100; i++) {
+		if (sceCdMV(mecha_version, &stat) != 0 && !(stat & 0x80))
+			return;
+	}
+}
+
 int IsDtlConsoleIdentity(const char *romver, const char *model)
 {
 	if (romver != NULL && !strncmp(romver, "0180C", 5))
@@ -110,7 +125,6 @@ static int read_model_name_scmd17(char *model, size_t model_len, u32 *stat)
 
 void GetConsoleModelName(const char *romver, char *model, size_t model_len)
 {
-	char raw_model[17];
 	u32 stat = 0;
 
 	if (model_len == 0)
@@ -124,17 +138,10 @@ void GetConsoleModelName(const char *romver, char *model, size_t model_len)
 		return;
 	}
 
-	loadCdModules();
+	initialize_model_cdvd_rpc();
 
 	if (read_model_name_scmd17(model, model_len, &stat))
 		return;
-
-	memset(raw_model, 0, sizeof(raw_model));
-	if (sceCdRM(raw_model, &stat) == 1 && !(stat & (0x80 | 0x40))) {
-		copy_printable_prefix(model, model_len, raw_model, (int)sizeof(raw_model) - 1);
-		if (model[0] != '\0')
-			return;
-	}
 
 	get_model_fallback_name(romver, model, model_len);
 }
