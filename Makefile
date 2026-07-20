@@ -38,7 +38,7 @@ EE_OBJS = main.o main_actions.o main_boot.o main_modules.o main_menu.o main_info
 	exploit_system_xlf_header.o exploit_xsystem_xlf_header.o exploit_dtl_system_xlf_header.o exploit_xlf_body.o \
 	exploit_osdsys_kernel.o exploit_osd110_kernel.o \
 	exploit_jpn_sys.o exploit_usa_sys.o exploit_eur_sys.o exploit_chn_sys.o \
-	exploit_list_icn.o exploit_copy_icn.o exploit_del_icn.o \
+	exploit_list_icn.o \
 	secrsif_irx.o exploit_ioprp_img.o
 
 EE_INCS := -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include -Iinclude

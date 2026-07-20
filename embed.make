@@ -66,8 +66,6 @@ EXPLOIT_USA_SYS_SOURCE := exploits/USA.sys
 EXPLOIT_EUR_SYS_SOURCE := exploits/EUR.sys
 EXPLOIT_CHN_SYS_SOURCE := exploits/CHN.sys
 EXPLOIT_LIST_ICN_SOURCE := exploits/list.icn
-EXPLOIT_COPY_ICN_SOURCE := exploits/copy.icn
-EXPLOIT_DEL_ICN_SOURCE := exploits/del.icn
 
 ifeq ($(wildcard $(EXPLOIT_SYSTEM_XLF_SOURCE)),)
   $(error Missing $(EXPLOIT_SYSTEM_XLF_SOURCE))
@@ -98,12 +96,6 @@ ifeq ($(wildcard $(EXPLOIT_CHN_SYS_SOURCE)),)
 endif
 ifeq ($(wildcard $(EXPLOIT_LIST_ICN_SOURCE)),)
   $(error Missing $(EXPLOIT_LIST_ICN_SOURCE))
-endif
-ifeq ($(wildcard $(EXPLOIT_COPY_ICN_SOURCE)),)
-  $(error Missing $(EXPLOIT_COPY_ICN_SOURCE))
-endif
-ifeq ($(wildcard $(EXPLOIT_DEL_ICN_SOURCE)),)
-  $(error Missing $(EXPLOIT_DEL_ICN_SOURCE))
 endif
 
 XPARAM_SOURCE :=
@@ -467,12 +459,6 @@ $(EE_ASM_DIR)exploit_chn_sys.s: $(EXPLOIT_CHN_SYS_SOURCE) | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)exploit_list_icn.s: $(EXPLOIT_LIST_ICN_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ exploit_list_icn
-
-$(EE_ASM_DIR)exploit_copy_icn.s: $(EXPLOIT_COPY_ICN_SOURCE) | $(EE_ASM_DIR)
-	$(BIN2S) $< $@ exploit_copy_icn
-
-$(EE_ASM_DIR)exploit_del_icn.s: $(EXPLOIT_DEL_ICN_SOURCE) | $(EE_ASM_DIR)
-	$(BIN2S) $< $@ exploit_del_icn
 
 #---{ USB }---#
 
