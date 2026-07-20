@@ -314,6 +314,45 @@ exit:
 }
 //Ends get_LANG_string
 //---------------------------------------------------------------------------
+static int copy_LANG_value(char *dst, const char *src, int len)
+{
+	int si;
+	int di = 0;
+
+	for (si = 0; si < len; si++) {
+		if (src[si] == '\\' && si + 1 < len) {
+			switch (src[si + 1]) {
+				case 'n':
+					dst[di++] = '\n';
+					si++;
+					continue;
+				case 'r':
+					dst[di++] = '\r';
+					si++;
+					continue;
+				case 't':
+					dst[di++] = '\t';
+					si++;
+					continue;
+				case '"':
+					dst[di++] = '"';
+					si++;
+					continue;
+				case '\\':
+					dst[di++] = '\\';
+					si++;
+					continue;
+				default:
+					break;
+			}
+		}
+		dst[di++] = src[si];
+	}
+
+	dst[di] = '\0';
+	return di;
+}
+
 static int isMiscLaunchNameAlias(const char *name, const char *configured_path, const char *default_name)
 {
 	return !strcmp(name, configured_path + strlen(setting->Misc)) || !strcmp(name, default_name);
@@ -476,11 +515,12 @@ void Load_External_Language(void)
 				file_tp = file_bp;
 				lang_tp = lang_bp;
 				while ((test = get_LANG_string(&file_tp, &id_p, &value_p)) >= 0) {
+					int decoded_len;
+
 					index = atoi(id_p);                   //get the string index
 					Lang_Extern[index].String = lang_tp;  //save pointer to this string base
-					strncpy(lang_tp, value_p, test);      //transfer the string
-					lang_tp[test] = '\0';                 //transfer a terminator
-					lang_tp += test + 1;                  //move dest pointer past this string
+					decoded_len = copy_LANG_value(lang_tp, value_p, test);
+					lang_tp += decoded_len + 1;           //move dest pointer past this string
 				}
 				External_Lang_Buffer = lang_bp;  //Save base pointer for releases
 				Lang = Lang_Extern;
