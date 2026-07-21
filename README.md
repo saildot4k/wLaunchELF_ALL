@@ -49,55 +49,31 @@ Source devices are `usb:`, `mmce0:`, `mmce1:`, and `udpfs:`.
 
 Header files must be placed in a flat folder matching the partition name:
 
-```text
-device:/__Headers/<matching partition name>/
-  system.cnf   required
-  icon.sys     required on PS2
-  list.ico     required on PS2
-  boot.kelf    optional, or BOOT.KELF
-  info.sys     optional, may be required for PSBBN/PSX XMB
-  jkt_001.png  optional, used by PSBBN
-  jkt_002.png  optional, used by PSX XMB
-  jkt_cp.png   optional copyright image, used by PSX XMB
-  BOOT.ELF     optional, useful with a KELF forwarder
+`device:/__Headers/<matching partition name>/`
+
+
+| File | Requirement | Destination | Maximum File Size | Format / Purpose | Notes |
+|---|---|---|---:|---|---|
+| `system.cnf` | Required | APA header | 512 bytes | Partition configuration | See [example](#example-systemcnf). |
+| `icon.sys` | Required on PS2 | APA header | 1,024 bytes | Icon metadata | Not listed as required for PSX/DVR environments. |
+| `list.ico` | Required on PS2 | APA header | 1,112,064 bytes | HDD-OSD icon | [Icon Generator](https://github.com/CosmicScale/HDD-OSD-Icon-Generator)  |
+| `boot.kelf` or `BOOT.KELF` | Optional | APA header | 978,944 bytes | Executable KELF | Use KELFTool. |
+| `BOOT.ELF` | Optional | `pfs:/BOOT.ELF` | N/A | Partition executable | Useful when the injected `boot.kelf` or `BOOT.KELF` is a KELF forwarder. |
+| `info.sys` | Optional | `pfs:/res/info.sys` | N/A | Partition information used by PSBBN or PSX XMB | See [example](#example-infosys). |
+| `jkt_001.png` | Optional | `pfs0:/res/jkt_001.png` | N/A | PSBBN image | Must be a 256x256 PNG using 8-bit indexed color. |
+| `jkt_002.png` | Optional | `pfs0:/res/jkt_002.png` | N/A | PSX XMB image | Must be a 76x108 PNG using 8-bit indexed color with a 32-bit RGBA palette. |
+| `jkt_cp.png` | Optional | `pfs0:/res/jkt_cp.png` | N/A | PSX XMB copyright image | Must be 290 pixels wide, 46-300 pixels high, and a 32-bit RGBA PNG. The XMB displays a 46-pixel-high area and scrolls taller images vertically. |
+
+#### Example system.cnf
+
+```ini
+BOOT2 = pfs:/boot.kelf
+VER = 1.00
+VMODE = NTSC
+HDDUNITPOWER = NICHDD
 ```
 
-If present, `info.sys`, `jkt_001.png`, `jkt_002.png`, and `jkt_cp.png` are copied
-into the partition PFS `res/` folder. If present, `BOOT.ELF` is copied to the
-partition PFS root.
-
-Files injected into the APA header have fixed space limits:
-
-```text
-system.cnf   512 bytes
-icon.sys     1,024 bytes
-list.ico     1,112,064 bytes
-boot.kelf    978,944 bytes, or BOOT.KELF
-```
-
-PFS resource files are copied from the same flat source folder. They are not
-written into the APA header:
-
-```text
-info.sys     copied to pfs0:/res/info.sys
-jkt_001.png  copied to pfs0:/res/jkt_001.png
-jkt_002.png  copied to pfs0:/res/jkt_002.png
-jkt_cp.png   copied to pfs0:/res/jkt_cp.png
-BOOT.ELF     copied to pfs0:/BOOT.ELF
-```
-
-Expected PNG formats:
-
-```text
-jkt_001.png  256x256 PNG, 8-bit indexed color, used by PSBBN
-jkt_002.png  76x108 PNG, 8-bit indexed color with 32-bit RGBA palette, used by PSX XMB
-jkt_cp.png   290 pixels wide, 46-300 pixels high, 32-bit RGBA PNG, used by PSX XMB
-```
-
-`jkt_cp.png` is the PSX XMB copyright image. The PSX XMB displays a 46-pixel
-high area; taller images scroll vertically.
-
-Example `info.sys`:
+#### Example info.sys
 
 ```ini
 title = [SYS] R3CONFIGURATOR
