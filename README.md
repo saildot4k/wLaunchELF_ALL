@@ -39,8 +39,13 @@ Dual HDD/ATA support is built in for future development.
 - Extra file extensions for Text Editor ShortCuts
 - Timestamp manipulation feature to fix the date of any memory card folder containing any icon-based exploit _(\*tuna)_
 - Launch KELFs (encrypted elfs)
-- APA Header injection
+- [APA Header injection](#HDD-APA-header-injection)
 - Support for PS3/PS4 Dualshocks thanks to Alex Parrado (DS34 build)
+
+
+<details>
+
+<summary>HDD APA header injection</summary>
 
 ### HDD APA header injection
 
@@ -58,11 +63,11 @@ Header files must be placed in a flat folder matching the partition name:
 | `icon.sys` | Required on PS2 | APA header | 1,024 bytes | Icon metadata | Not listed as required for PSX/DVR environments. |
 | `list.ico` | Required on PS2 | APA header | 1,112,064 bytes | HDD-OSD icon | [Icon Generator](https://github.com/CosmicScale/HDD-OSD-Icon-Generator)  |
 | `boot.kelf` or `BOOT.KELF` | Optional | APA header | 978,944 bytes | Executable KELF | Use KELFTool. |
-| `BOOT.ELF` | Optional | `pfs:/BOOT.ELF` | N/A | Partition executable | Useful when the injected `boot.kelf` or `BOOT.KELF` is a KELF forwarder. |
+| `BOOT.ELF` | Optional | `pfs:/BOOT.ELF` | N/A | Partition executable | Useful when the injected `boot.kelf` or `BOOT.KELF` is a KELF forwarder such as OSDMenu launcher |
 | `info.sys` | Optional | `pfs:/res/info.sys` | N/A | Partition information used by PSBBN or PSX XMB | See [example](#example-infosys). |
-| `jkt_001.png` | Optional | `pfs0:/res/jkt_001.png` | N/A | PSBBN image | Must be a 256x256 PNG using 8-bit indexed color. |
-| `jkt_002.png` | Optional | `pfs0:/res/jkt_002.png` | N/A | PSX XMB image | Must be a 76x108 PNG using 8-bit indexed color with a 32-bit RGBA palette. |
-| `jkt_cp.png` | Optional | `pfs0:/res/jkt_cp.png` | N/A | PSX XMB copyright image | Must be 290 pixels wide, 46-300 pixels high, and a 32-bit RGBA PNG. The XMB displays a 46-pixel-high area and scrolls taller images vertically. |
+| `jkt_001.png` | Optional | `pfs0:/res/jkt_001.png` | N/A | PSBBN image | 256x256 PNG 8-bit indexed color 32-bit RGBA palette. |
+| `jkt_002.png` | Optional | `pfs0:/res/jkt_002.png` | N/A | PSX XMB image | 76x108 PNG 8-bit indexed color 32-bit RGBA palette. |
+| `jkt_cp.png` | Optional | `pfs0:/res/jkt_cp.png` | N/A | PSX XMB copyright image | 90 pixels wide, 46-300 pixels high, 32-bit RGBA PNG. |
 
 #### Example system.cnf
 
@@ -98,6 +103,8 @@ violence_flag = 0
 content_type = 255
 content_subtype = 0
 ```
+
+</details>
 
 ### Build shortcuts
 
