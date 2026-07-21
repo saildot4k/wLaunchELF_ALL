@@ -8,6 +8,10 @@
 #define APA_HEADER_MAGIC "PS2ICON3D"
 #define HDD_HEADER_SOURCE_WAIT_MS 3000
 #define HDD_HEADER_SOURCE_POLL_MS 500
+#define HDD_HEADER_COPY_BUFFER_SIZE 32768
+#define HDD_HEADER_PFS_DIR_MODE (FIO_S_IRUSR | FIO_S_IWUSR | FIO_S_IXUSR | \
+                                 FIO_S_IRGRP | FIO_S_IWGRP | FIO_S_IXGRP | \
+                                 FIO_S_IROTH | FIO_S_IWOTH | FIO_S_IXOTH)
 
 enum HddHeaderFileKind {
 	HDD_HEADER_SYSTEM_CNF = 0,
@@ -28,15 +32,32 @@ typedef struct
 	int required;
 } HddHeaderFileSpec;
 
+typedef struct
+{
+	const char *source_name;
+	const char *alternate_source_name;
+	const char *dest_path;
+	int needs_res_dir;
+} HddHeaderPfsFileSpec;
+
 static const HddHeaderFileSpec hdd_header_files[HDD_HEADER_FILE_COUNT] = {
     {"system.cnf", 0x1200, 0x1010, 0x1014, 0x1400 - 0x1200, 1},
-    {"icon.sys", 0x1400, 0x1018, 0x101C, 0x1800 - 0x1400, 1},
-    {"list.ico", 0x1800, 0x1020, 0x1024, 0x111000 - 0x1800, 1},
+    {"icon.sys", 0x1400, 0x1018, 0x101C, 0x1800 - 0x1400, 0},
+    {"list.ico", 0x1800, 0x1020, 0x1024, 0x111000 - 0x1800, 0},
     {"boot.kelf", 0x111000, 0x1030, 0x1034, APA_HEADER_SIZE - 0x111000, 0},
+};
+
+static const HddHeaderPfsFileSpec hdd_header_pfs_files[] = {
+    {"info.sys", NULL, "pfs0:/res/info.sys", 1},
+    {"jkt_001.png", NULL, "pfs0:/res/jkt_001.png", 1},
+    {"jkt_002.png", NULL, "pfs0:/res/jkt_002.png", 1},
+    {"jkt_cp.png", NULL, "pfs0:/res/jkt_cp.png", 1},
+    {"BOOT.ELF", "boot.elf", "pfs0:/BOOT.ELF", 0},
 };
 
 static unsigned char hdd_header_io_buffer[512 + sizeof(hddAtaTransfer_t)] __attribute__((aligned(64)));
 static unsigned char hdd_header_buffer[APA_HEADER_SIZE] __attribute__((aligned(64)));
+static unsigned char hdd_header_copy_buffer[HDD_HEADER_COPY_BUFFER_SIZE] __attribute__((aligned(64)));
 
 static void hddHeaderDelay(int ms)
 {
@@ -115,13 +136,23 @@ static int hddHeaderSourceHasFile(const char *dir, const HddHeaderFileSpec *spec
 	return 0;
 }
 
+static int hddHeaderFileRequired(const HddHeaderFileSpec *spec)
+{
+	if (spec->required)
+		return 1;
+	if (!console_is_PSX && (!strcmp(spec->name, "icon.sys") || !strcmp(spec->name, "list.ico")))
+		return 1;
+
+	return 0;
+}
+
 static int hddHeaderSourceReady(const char *dir)
 {
 	int i;
 	int ret;
 
 	for (i = 0; i < HDD_HEADER_FILE_COUNT; i++) {
-		if (!hdd_header_files[i].required)
+		if (!hddHeaderFileRequired(&hdd_header_files[i]))
 			continue;
 
 		ret = hddHeaderSourceHasFile(dir, &hdd_header_files[i]);
@@ -274,7 +305,7 @@ static int hddHeaderReadFileIntoHeader(const char *source_dir, const HddHeaderFi
 		ret = hddHeaderGetFileSize(path, &file_size);
 	}
 	if (ret < 0)
-		return spec->required ? ret : 0;
+		return hddHeaderFileRequired(spec) ? ret : 0;
 	if (file_size > spec->max_size)
 		return -EFBIG;
 
@@ -326,7 +357,165 @@ static int hddHeaderPatchFromSource(const char *source_dir)
 	return 0;
 }
 
-int InjectHddPartitionHeaderFromSource(const char *partition_name, const char *source_device, char *source_dir, size_t source_dir_size)
+static int hddHeaderOpenOptionalSourceFile(const char *source_dir, const char *source_name, const char *alternate_source_name, int *fd_out)
+{
+	const char *names[2];
+	char path[MAX_PATH];
+	char fixed_path[MAX_PATH];
+	int i;
+	int fd;
+	int ret;
+
+	if (fd_out == NULL)
+		return -EINVAL;
+
+	*fd_out = -1;
+	names[0] = source_name;
+	names[1] = alternate_source_name;
+
+	for (i = 0; i < 2; i++) {
+		if (names[i] == NULL)
+			continue;
+
+		ret = hddHeaderJoinPath(path, sizeof(path), source_dir, names[i]);
+		if (ret < 0)
+			return ret;
+
+		ret = genFixPath(path, fixed_path);
+		if (ret < 0)
+			return ret;
+
+		fd = genOpen(fixed_path, FIO_O_RDONLY);
+		if (fd >= 0) {
+			*fd_out = fd;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int hddHeaderHasOptionalPfsFiles(const char *source_dir)
+{
+	unsigned int i;
+	int fd;
+	int ret;
+
+	for (i = 0; i < sizeof(hdd_header_pfs_files) / sizeof(hdd_header_pfs_files[0]); i++) {
+		ret = hddHeaderOpenOptionalSourceFile(source_dir, hdd_header_pfs_files[i].source_name,
+		                                      hdd_header_pfs_files[i].alternate_source_name, &fd);
+		if (ret < 0)
+			return ret;
+		if (ret > 0) {
+			genClose(fd);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int hddHeaderEnsurePfsResDir(void)
+{
+	iox_stat_t stat;
+	int ret;
+
+	ret = fileXioMkdir("pfs0:/res", HDD_HEADER_PFS_DIR_MODE);
+	if (ret >= 0)
+		return 0;
+
+	ret = fileXioGetStat("pfs0:/res", &stat);
+	if (ret < 0)
+		return ret;
+	if (!FIO_S_ISDIR(stat.mode))
+		return -EINVAL;
+
+	return 0;
+}
+
+static int hddHeaderCopyOptionalPfsFile(const char *source_dir, const HddHeaderPfsFileSpec *spec)
+{
+	int in_fd = -1;
+	int out_fd = -1;
+	int ret;
+
+	ret = hddHeaderOpenOptionalSourceFile(source_dir, spec->source_name, spec->alternate_source_name, &in_fd);
+	if (ret <= 0)
+		return ret;
+
+	if (spec->needs_res_dir) {
+		ret = hddHeaderEnsurePfsResDir();
+		if (ret < 0)
+			goto done;
+	}
+
+	out_fd = genOpen(spec->dest_path, FIO_O_WRONLY | FIO_O_TRUNC | FIO_O_CREAT);
+	if (out_fd < 0) {
+		ret = out_fd;
+		goto done;
+	}
+
+	while (1) {
+		int bytes_read = genRead(in_fd, hdd_header_copy_buffer, sizeof(hdd_header_copy_buffer));
+		if (bytes_read < 0) {
+			ret = bytes_read;
+			break;
+		}
+		if (bytes_read == 0) {
+			ret = 1;
+			break;
+		}
+		if (genWrite(out_fd, hdd_header_copy_buffer, bytes_read) != bytes_read) {
+			ret = -EIO;
+			break;
+		}
+	}
+
+done:
+	if (out_fd >= 0)
+		genClose(out_fd);
+	if (in_fd >= 0)
+		genClose(in_fd);
+
+	return ret;
+}
+
+static int hddHeaderCopyOptionalPfsFiles(const char *partition_path, const char *source_dir, int *copied_count)
+{
+	unsigned int i;
+	int copied = 0;
+	int ret;
+
+	if (copied_count != NULL)
+		*copied_count = 0;
+
+	ret = hddHeaderHasOptionalPfsFiles(source_dir);
+	if (ret <= 0)
+		return ret;
+
+	fileXioUmount("pfs0:");
+	ret = fileXioMount("pfs0:", partition_path, FIO_MT_RDWR);
+	if (ret < 0)
+		return ret;
+
+	for (i = 0; i < sizeof(hdd_header_pfs_files) / sizeof(hdd_header_pfs_files[0]); i++) {
+		ret = hddHeaderCopyOptionalPfsFile(source_dir, &hdd_header_pfs_files[i]);
+		if (ret < 0)
+			break;
+		if (ret > 0)
+			copied++;
+	}
+
+	fileXioUmount("pfs0:");
+
+	if (copied_count != NULL)
+		*copied_count = copied;
+
+	return (ret < 0) ? ret : 0;
+}
+
+int InjectHddPartitionHeaderFromSource(const char *partition_name, const char *source_device, char *source_dir, size_t source_dir_size,
+                                       int *pfs_files_copied, int *pfs_copy_error)
 {
 	char partition_path[MAX_NAME + 6];
 	char resolved_source_dir[MAX_PATH];
@@ -338,6 +527,10 @@ int InjectHddPartitionHeaderFromSource(const char *partition_name, const char *s
 		return -EINVAL;
 	if (source_device == NULL || source_device[0] == '\0')
 		return -EINVAL;
+	if (pfs_files_copied != NULL)
+		*pfs_files_copied = 0;
+	if (pfs_copy_error != NULL)
+		*pfs_copy_error = 0;
 
 	ret = hddHeaderWaitForSource(source_device, partition_name, resolved_source_dir, sizeof(resolved_source_dir));
 	if (ret < 0)
@@ -368,5 +561,13 @@ int InjectHddPartitionHeaderFromSource(const char *partition_name, const char *s
 	if (ret < 0)
 		return ret;
 
-	return hddHeaderWriteSectors(partition_sector);
+	ret = hddHeaderWriteSectors(partition_sector);
+	if (ret < 0)
+		return ret;
+
+	ret = hddHeaderCopyOptionalPfsFiles(partition_path, resolved_source_dir, pfs_files_copied);
+	if (ret < 0 && pfs_copy_error != NULL)
+		*pfs_copy_error = ret;
+
+	return 0;
 }

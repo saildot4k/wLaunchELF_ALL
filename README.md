@@ -39,36 +39,89 @@ Dual HDD/ATA support is built in for future development.
 - Extra file extensions for Text Editor ShortCuts
 - Timestamp manipulation feature to fix the date of any memory card folder containing any icon-based exploit _(\*tuna)_
 - Launch KELFs (encrypted elfs)
+- APA Header injection
 - Support for PS3/PS4 Dualshocks thanks to Alex Parrado (DS34 build)
-
-### Build shortcuts
-
-- `make all-ds34-off` builds a dedicated ELF without DS34 support.
-- `make all-ds34-on` builds a dedicated ELF with DS34 support.
-- `make all-ds34-variants` builds both variants in one run.
 
 ### HDD APA header injection
 
-The HDD Manager R1 menu includes `Inject Header` for PFS partitions.  
-Source for files includes usb, mmce and udpfs:
+The HDD Manager R1 menu includes `Inject Header` for PFS partitions.
+Source devices are `usb:`, `mmce0:`, `mmce1:`, and `udpfs:`.
 
-`<source>/__Headers/<partition name>/`
+Header files must be placed in a flat folder matching the partition name:
 
-Required files:
-- `system.cnf`
-- `icon.sys`
-- `list.ico`
+```text
+device:/__Headers/<matching partition name>/
+  system.cnf   required
+  icon.sys     required on PS2
+  list.ico     required on PS2
+  boot.kelf    optional, or BOOT.KELF
+  info.sys     optional, may be required for PSBBN/PSX XMB
+  jkt_001.png  optional, used by PSBBN
+  jkt_002.png  optional, used by PSX XMB
+  jkt_cp.png   optional copyright image, used by PSX XMB
+  BOOT.ELF     optional, useful with a KELF forwarder
+```
 
-Optional file:
-- `boot.kelf`  
-Use KELFTool to create a kelf.
+If present, `info.sys`, `jkt_001.png`, `jkt_002.png`, and `jkt_cp.png` are copied
+into the partition PFS `res/` folder. If present, `BOOT.ELF` is copied to the
+partition PFS root.
 
-Example for partition `PP.ULE` on USB:
+Files injected into the APA header have fixed space limits:
 
-- `usb:/__Headers/PP.ULE/system.cnf`
-- `usb:/__Headers/PP.ULE/icon.sys`
-- `usb:/__Headers/PP.ULE/list.ico`
+```text
+system.cnf   512 bytes
+icon.sys     1,024 bytes
+list.ico     1,112,064 bytes
+boot.kelf    978,944 bytes, or BOOT.KELF
+```
 
+PFS resource files are copied from the same flat source folder. They are not
+written into the APA header:
+
+```text
+info.sys     copied to pfs0:/res/info.sys
+jkt_001.png  copied to pfs0:/res/jkt_001.png
+jkt_002.png  copied to pfs0:/res/jkt_002.png
+jkt_cp.png   copied to pfs0:/res/jkt_cp.png
+BOOT.ELF     copied to pfs0:/BOOT.ELF
+```
+
+Expected PNG formats:
+
+```text
+jkt_001.png  256x256 PNG, 8-bit indexed color, used by PSBBN
+jkt_002.png  76x108 PNG, 8-bit indexed color with 32-bit RGBA palette, used by PSX XMB
+jkt_cp.png   290 pixels wide, 46-300 pixels high, 32-bit RGBA PNG, used by PSX XMB
+```
+
+`jkt_cp.png` is the PSX XMB copyright image. The PSX XMB displays a 46-pixel
+high area; taller images scroll vertically.
+
+Example `info.sys`:
+
+```ini
+title = [SYS] R3CONFIGURATOR
+title_id = SYS-R3CONFI
+title_sub_id = 0
+release_date =
+developer_id =
+publisher_id = pcm720, R3Z3N
+note =
+content_web =
+image_topviewflag = 0
+image_type = 0
+image_count = 1
+image_viewsec = 600
+copyright_viewflag = 0
+copyright_imgcount = 0
+genre =
+parental_lock = 1
+effective_date = 0
+expire_date = 0
+violence_flag = 0
+content_type = 255
+content_subtype = 0
+```
 
 ### Build shortcuts
 

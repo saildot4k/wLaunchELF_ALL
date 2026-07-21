@@ -973,12 +973,15 @@ void hddManager(void)
 					const char *source_device = NULL;
 					char source_dir[MAX_PATH];
 					char confirm[MAX_PATH];
+					int pfs_files_copied;
+					int pfs_copy_error;
 
 					if (MenuHeaderSource(&source_device) >= 0) {
 						snprintf(confirm, sizeof(confirm),
 						         "Inject APA header into hdd0:%s from %s?\n"
 						         "Use %s/__Headers/%s/\n"
-						         "Required: system.cnf, icon.sys, list.ico",
+						         "Required: system.cnf; PS2: icon.sys, list.ico\n"
+						         "Optional: boot.kelf, info.sys, jkt_*.png, BOOT.ELF",
 						         PartyInfo[browser_sel].Name, source_device, source_device, PartyInfo[browser_sel].Name);
 					}
 					if (source_device != NULL && ynDialog(confirm) == 1) {
@@ -986,9 +989,17 @@ void hddManager(void)
 						unmountParty(0);
 						unmountParty(1);
 						source_dir[0] = '\0';
-						ret = InjectHddPartitionHeaderFromSource(PartyInfo[browser_sel].Name, source_device, source_dir, sizeof(source_dir));
+						pfs_files_copied = 0;
+						pfs_copy_error = 0;
+						ret = InjectHddPartitionHeaderFromSource(PartyInfo[browser_sel].Name, source_device, source_dir, sizeof(source_dir),
+						                                         &pfs_files_copied, &pfs_copy_error);
 						if (ret >= 0) {
-							snprintf(tmp, sizeof(tmp), "Header injected from %s", source_dir);
+							if (pfs_copy_error < 0)
+								snprintf(tmp, sizeof(tmp), "Header injected; PFS copy failed: %d", pfs_copy_error);
+							else if (pfs_files_copied > 0)
+								snprintf(tmp, sizeof(tmp), "Header injected; PFS files copied: %d", pfs_files_copied);
+							else
+								snprintf(tmp, sizeof(tmp), "Header injected from %s", source_dir);
 							drawMsg(tmp);
 						} else {
 							snprintf(tmp, sizeof(tmp), "Header injection failed: %d", ret);

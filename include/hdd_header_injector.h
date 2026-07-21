@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
-int InjectHddPartitionHeaderFromSource(const char *partition_name, const char *source_device, char *source_dir, size_t source_dir_size);
+int InjectHddPartitionHeaderFromSource(const char *partition_name, const char *source_device, char *source_dir, size_t source_dir_size,
+                                       int *pfs_files_copied, int *pfs_copy_error);
 
 #endif
