@@ -19,6 +19,61 @@ static const char *getXfromRelativePath(const char *path)
 }
 #endif
 
+enum {
+	FILER_CONFLICT_NONE = 0,
+	FILER_CONFLICT_FILE,
+	FILER_CONFLICT_DIR
+};
+
+static int filerPathConflictType(const char *path)
+{
+	iox_stat_t stat;
+	char dir_path[MAX_PATH];
+	int fd, stat_found;
+
+	if (path == NULL || path[0] == '\0')
+		return FILER_CONFLICT_NONE;
+
+	stat_found = (genGetStat(path, &stat) >= 0);
+	if (stat_found && FIO_S_ISDIR(stat.mode))
+		return FILER_CONFLICT_DIR;
+
+	snprintf(dir_path, sizeof(dir_path), "%s", path);
+	fd = genDopen(dir_path);
+	if (fd >= 0) {
+		genDclose(fd);
+		return FILER_CONFLICT_DIR;
+	}
+
+	if (stat_found)
+		return FILER_CONFLICT_FILE;
+
+	fd = genOpen(path, FIO_O_RDONLY);
+	if (fd >= 0) {
+		genClose(fd);
+		return FILER_CONFLICT_FILE;
+	}
+
+	return FILER_CONFLICT_NONE;
+}
+
+static int filerPathExistsForConflict(const char *path)
+{
+	return (filerPathConflictType(path) != FILER_CONFLICT_NONE);
+}
+
+static int filerMkdirNoOverwrite(const char *path)
+{
+	int conflict_type;
+
+	conflict_type = filerPathConflictType(path);
+	if (conflict_type == FILER_CONFLICT_DIR)
+		return -EEXIST;
+	if (conflict_type == FILER_CONFLICT_FILE)
+		return -1;
+	return genMkdir(path, fileMode);
+}
+
 u64 getFileSize(const char *path, const FILEINFO *file)
 {
 	iox_stat_t stat;
@@ -204,11 +259,11 @@ int delete (const char *path, const FILEINFO *file)
 		} else if (!strncmp(path, "hdd", 3) || !strncmp(path, "dvr_hdd", 7)) {
 			ret = fileXioRmdir(hdddir);
 		} else if (!strncmp(path, "vmc", 3)) {
-			ret = fileXioRmdir(dir);
+			ret = genRmdir(dir);
 
 		} else {  //For all other devices
 			sprintf(dir, "%s%s", path, file->name);
-			ret = fileXioRmdir(dir);
+			ret = genRmdir(dir);
 		}
 	} else {  //The object to delete is a file
 		if (!strncmp(path, "mc", 2)) {
@@ -224,9 +279,9 @@ int delete (const char *path, const FILEINFO *file)
 		} else if (!strncmp(path, "hdd", 3) || !strncmp(path, "dvr_hdd", 7)) {
 			ret = fileXioRemove(hdddir);
 		} else if (!strncmp(path, "vmc", 3)) {
-			ret = fileXioRemove(dir);
+			ret = genRemove(dir);
 		} else {  //For all other devices
-			ret = fileXioRemove(dir);
+			ret = genRemove(dir);
 		}
 	}
 	return ret;
@@ -323,14 +378,21 @@ int Rename(const char *path, const FILEINFO *file, const char *name)
 	} else if (!strncmp(path, "host", 4) || !strncmp(path, "udpfs", 5)) {
 		snprintf(oldPath, sizeof(oldPath), "%s%s", path, file->name);
 		snprintf(newPath, sizeof(newPath), "%s%s", path, name);
-		makeHostPath(oldPath, oldPath);
-		makeHostPath(newPath, newPath);
-		ret = fileXioRename(oldPath, newPath);
+		if (filerPathExistsForConflict(newPath)) {
+			ret = -EEXIST;
+		} else {
+			makeHostPath(oldPath, oldPath);
+			makeHostPath(newPath, newPath);
+			ret = fileXioRename(oldPath, newPath);
+		}
 #endif
 	} else {  //For all other devices
 		sprintf(oldPath, "%s%s", path, file->name);
 		sprintf(newPath, "%s%s", path, name);
-		ret = fileXioRename(oldPath, newPath);
+		if (filerPathExistsForConflict(newPath))
+			ret = -EEXIST;
+		else
+			ret = fileXioRename(oldPath, newPath);
 	}
 
 	return ret;
@@ -369,16 +431,7 @@ int newdir(const char *path, const char *name)
 		strcpy(dir, path);
 		strcat(dir, name);
 		genLimObjName(dir, 0);
-		printf("[VMC_NEWDIR] request path='%s' name='%s' dir='%s'\n", path, name, dir);
-		if ((ret = fileXioDopen(dir)) >= 0) {
-			printf("[VMC_NEWDIR] exists dir='%s' fd=%d\n", dir, ret);
-			fileXioDclose(ret);
-			ret = -EEXIST;  //return fileXio error code for pre-existing folder
-		} else {
-			printf("[VMC_NEWDIR] dopen failed dir='%s' ret=%d; trying mkdir\n", dir, ret);
-			ret = fileXioMkdir(dir, fileMode);
-			printf("[VMC_NEWDIR] mkdir dir='%s' ret=%d\n", dir, ret);
-		}
+		ret = filerMkdirNoOverwrite(dir);
 	} else if (!strncmp(path, "mc", 2)) {
 		sprintf(dir, "%s%s", path + 4, name);
 		genLimObjName(dir, 0);
@@ -402,20 +455,13 @@ int newdir(const char *path, const char *name)
 		strcpy(dir, path);
 		strcat(dir, name);
 		genLimObjName(dir, 0);
-		if (!strncmp(dir, "host:/", 6))
-			makeHostPath(dir, dir);
-		if ((ret = fileXioDopen(dir)) >= 0) {
-			fileXioDclose(ret);
-			ret = -EEXIST;  //return fileXio error code for pre-existing folder
-		} else {
-			ret = fileXioMkdir(dir, fileMode);  //Create the new folder
-		}
+		ret = filerMkdirNoOverwrite(dir);
 #endif
 	} else {  //For all other devices
 		strcpy(dir, path);
 		strcat(dir, name);
 		genLimObjName(dir, 0);
-		ret = fileXioMkdir(dir, fileMode);
+		ret = filerMkdirNoOverwrite(dir);
 	}
 	return ret;
 }
