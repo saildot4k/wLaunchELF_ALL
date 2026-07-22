@@ -58,6 +58,16 @@ static int launchArgsSetPlainError(char *message, size_t message_size, const cha
 	return -1;
 }
 
+static void launchArgsMakeOpenPath(const char *path, char *file_path, size_t file_path_size)
+{
+	strncpy(file_path, path, file_path_size - 1);
+	file_path[file_path_size - 1] = '\0';
+	if (genFixPath(path, file_path) < 0) {
+		strncpy(file_path, path, file_path_size - 1);
+		file_path[file_path_size - 1] = '\0';
+	}
+}
+
 static int launchArgsCommitLine(const char *line, int line_len, char *message, size_t message_size)
 {
 	if (line_len <= 0)
@@ -122,6 +132,27 @@ static int launchArgsFinishParse(const char *source, const char *line, int line_
 	return launchArgCount;
 }
 
+static int launchArgsReadFromFd(const char *source, int fd, char *message, size_t message_size)
+{
+	char line[LAUNCH_ARG_MAX_LINE + 1];
+	unsigned char ch;
+	int rd, line_len, skip_lf;
+
+	line_len = 0;
+	skip_lf = 0;
+	while ((rd = genRead(fd, &ch, 1)) > 0) {
+		if (launchArgsParseChar(ch, line, &line_len, &skip_lf, message, message_size) < 0) {
+			genClose(fd);
+			return -1;
+		}
+	}
+	genClose(fd);
+	if (rd < 0)
+		return launchArgsSetPlainError(message, message_size, LNG(Launch_Args_Invalid));
+
+	return launchArgsFinishParse(source, line, line_len, message, message_size);
+}
+
 int LaunchArgsLoadFromBuffer(const char *source, const char *buffer, int size, char *message, size_t message_size)
 {
 	char line[LAUNCH_ARG_MAX_LINE + 1];
@@ -144,38 +175,55 @@ int LaunchArgsLoadFromBuffer(const char *source, const char *buffer, int size, c
 int LaunchArgsLoadFromFile(const char *path, char *message, size_t message_size)
 {
 	char file_path[MAX_PATH];
-	char line[LAUNCH_ARG_MAX_LINE + 1];
-	unsigned char ch;
-	int fd, rd, line_len, skip_lf;
+	int fd;
 
 	LaunchArgsClear();
 	if (path == NULL || path[0] == '\0')
 		return launchArgsSetPlainError(message, message_size, LNG(Launch_Args_Invalid));
 
-	strncpy(file_path, path, sizeof(file_path) - 1);
-	file_path[sizeof(file_path) - 1] = '\0';
-	if (genFixPath(path, file_path) < 0) {
-		strncpy(file_path, path, sizeof(file_path) - 1);
-		file_path[sizeof(file_path) - 1] = '\0';
-	}
-
+	launchArgsMakeOpenPath(path, file_path, sizeof(file_path));
 	fd = genOpen(file_path, FIO_O_RDONLY);
 	if (fd < 0)
 		return launchArgsSetPlainError(message, message_size, LNG(Failed_Opening_File));
 
-	line_len = 0;
-	skip_lf = 0;
-	while ((rd = genRead(fd, &ch, 1)) > 0) {
-		if (launchArgsParseChar(ch, line, &line_len, &skip_lf, message, message_size) < 0) {
-			genClose(fd);
-			return -1;
-		}
-	}
-	genClose(fd);
-	if (rd < 0)
-		return launchArgsSetPlainError(message, message_size, LNG(Launch_Args_Invalid));
+	return launchArgsReadFromFd(path, fd, message, message_size);
+}
 
-	return launchArgsFinishParse(path, line, line_len, message, message_size);
+int LaunchArgsLoadSidecarForExec(const char *exec_path, char *message, size_t message_size)
+{
+	char arg_path[MAX_PATH];
+	char file_path[MAX_PATH];
+	const char *name_start;
+	const char *slash;
+	const char *colon;
+	const char *dot;
+	size_t base_len;
+	int fd;
+
+	if (exec_path == NULL || exec_path[0] == '\0' || LaunchArgsPending())
+		return 0;
+
+	slash = strrchr(exec_path, '/');
+	colon = strrchr(exec_path, ':');
+	name_start = exec_path;
+	if (slash != NULL)
+		name_start = slash + 1;
+	if (colon != NULL && colon + 1 > name_start)
+		name_start = colon + 1;
+
+	dot = strrchr(name_start, '.');
+	base_len = (dot != NULL) ? (size_t)(dot - exec_path) : strlen(exec_path);
+	if (base_len + 4 >= sizeof(arg_path))
+		return 0;
+
+	snprintf(arg_path, sizeof(arg_path), "%.*s.arg", (int)base_len, exec_path);
+	launchArgsMakeOpenPath(arg_path, file_path, sizeof(file_path));
+	fd = genOpen(file_path, FIO_O_RDONLY);
+	if (fd < 0)
+		return 0;
+
+	LaunchArgsClear();
+	return launchArgsReadFromFd(arg_path, fd, message, message_size);
 }
 
 int LaunchArgsCopyToArgv(char **argv, int max_args)

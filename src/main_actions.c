@@ -51,6 +51,13 @@ static int isMbrLaunchPath(const char *path)
 }
 #endif
 
+static const char *getLaunchArgsSidecarBasePath(const char *path, const char *fullpath)
+{
+	if (path != NULL && !strncmp(path, "mc:/", 4) && fullpath != NULL && fullpath[0] != '\0')
+		return fullpath;
+	return path;
+}
+
 static void executeBrowserSelection(char *selected_path, const MainExecuteContext *ctx)
 {
 	while (selected_path[0]) {
@@ -512,6 +519,10 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 			int disc_launch = isLikelyDiscLaunch(path);
 			int have_launch_gameid = 0;
 			char launch_gameid[12];
+
+			if (!LaunchArgsPending() &&
+			    LaunchArgsLoadSidecarForExec(getLaunchArgsSidecarBasePath(path, fullpath), ctx->main_msg, MAX_PATH) < 0)
+				return;
 
 			if (disc_launch) {
 				have_launch_gameid = buildLaunchGameID(fullpath, launch_gameid, sizeof(launch_gameid));

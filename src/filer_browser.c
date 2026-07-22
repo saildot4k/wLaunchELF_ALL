@@ -1744,7 +1744,8 @@ int getFilePath(char *out, int cnfmode)
 									genCmpFileExt(files[top + i].name, "XML") ||
 									genCmpFileExt(files[top + i].name, "TOML") ||
 									genCmpFileExt(files[top + i].name, "YAML") ||
-									genCmpFileExt(files[top + i].name, "YML")
+									genCmpFileExt(files[top + i].name, "YML") ||
+									genCmpFileExt(files[top + i].name, "ARG")
 									)
 							iconcolr = COLOR_GRAPH4;
 						else

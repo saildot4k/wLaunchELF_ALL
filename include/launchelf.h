@@ -397,6 +397,7 @@ void LaunchArgsClear(void);
 int LaunchArgsPending(void);
 int LaunchArgsGetCount(void);
 int LaunchArgsLoadFromFile(const char *path, char *message, size_t message_size);
+int LaunchArgsLoadSidecarForExec(const char *exec_path, char *message, size_t message_size);
 int LaunchArgsLoadFromBuffer(const char *source, const char *buffer, int size, char *message, size_t message_size);
 int LaunchArgsCopyToArgv(char **argv, int max_args);
 #ifdef XFROM
