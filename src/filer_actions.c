@@ -25,6 +25,13 @@ enum {
 	FILER_CONFLICT_DIR
 };
 
+enum {
+	FILER_EXPLOIT_PROTECT_NONE = 0,
+	FILER_EXPLOIT_PROTECT_THIS_CONSOLE,
+	FILER_EXPLOIT_PROTECT_OTHER_REGION,
+	FILER_EXPLOIT_PROTECT_GENERIC
+};
+
 static int filerPathConflictType(const char *path)
 {
 	iox_stat_t stat;
@@ -72,6 +79,159 @@ static int filerMkdirNoOverwrite(const char *path)
 	if (conflict_type == FILER_CONFLICT_FILE)
 		return -1;
 	return genMkdir(path, fileMode);
+}
+
+static int filerIsMcRootExploitFolderName(const char *name)
+{
+	if (name == NULL)
+		return 0;
+
+	return (!stricmp(name, "OPENTUNA") ||
+	        !stricmp(name, "FUNTUNA") ||
+	        !stricmp(name, "FORTUNA") ||
+	        !stricmp(name, HACK_FOLDER));
+}
+
+static int filerIsSystemUpdateFolderName(const char *name)
+{
+	char region;
+
+	if (name == NULL)
+		return 0;
+	if (strlen(name) != strlen("BIEXEC-SYSTEM"))
+		return 0;
+	if (name[0] != 'B' || stricmp(name + 2, "EXEC-SYSTEM"))
+		return 0;
+
+	region = name[1];
+	return (region == 'I' || region == 'E' || region == 'A' || region == 'C');
+}
+
+static void filerBuildFullPath(char *out, size_t out_size, const char *path, const FILEINFO *file)
+{
+	if (out == NULL || out_size == 0)
+		return;
+
+	if (path == NULL)
+		path = "";
+	if (file != NULL)
+		snprintf(out, out_size, "%s%s", path, file->name);
+	else
+		snprintf(out, out_size, "%s", path);
+	out[out_size - 1] = '\0';
+}
+
+static int filerGetFirstPathComponent(const char *full_path, char *component, size_t component_size)
+{
+	const char *p;
+	const char *slash;
+	size_t len;
+
+	if (full_path == NULL || component == NULL || component_size == 0)
+		return 0;
+
+	component[0] = '\0';
+	p = strchr(full_path, ':');
+	if (p == NULL)
+		return 0;
+	p++;
+	if (*p == '/')
+		p++;
+	if (*p == '\0')
+		return 0;
+
+	slash = strchr(p, '/');
+	len = (slash != NULL) ? (size_t)(slash - p) : strlen(p);
+	if (len == 0)
+		return 0;
+	if (len >= component_size)
+		len = component_size - 1;
+
+	memcpy(component, p, len);
+	component[len] = '\0';
+	return 1;
+}
+
+static int filerGetExploitProtectionType(const char *path, const FILEINFO *file, char *folder, size_t folder_size)
+{
+	char full_path[MAX_PATH];
+	char root_folder[40];
+	int is_mc;
+	int is_xfrom;
+
+	if (folder != NULL && folder_size > 0)
+		folder[0] = '\0';
+	if (path == NULL)
+		return FILER_EXPLOIT_PROTECT_NONE;
+
+	is_mc = (!strncmp(path, "mc0:", 4) || !strncmp(path, "mc1:", 4));
+	is_xfrom = (!strncmp(path, "xfrom:", 6));
+	if (!is_mc && !is_xfrom)
+		return FILER_EXPLOIT_PROTECT_NONE;
+
+	filerBuildFullPath(full_path, sizeof(full_path), path, file);
+	if (!filerGetFirstPathComponent(full_path, root_folder, sizeof(root_folder)))
+		return FILER_EXPLOIT_PROTECT_NONE;
+
+	if (folder != NULL && folder_size > 0) {
+		snprintf(folder, folder_size, "%s", root_folder);
+		folder[folder_size - 1] = '\0';
+	}
+
+	if (is_mc) {
+		if (filerIsSystemUpdateFolderName(root_folder)) {
+			if (root_folder[1] == rough_region || (console_is_PSX && !stricmp(root_folder, "BIEXEC-SYSTEM")))
+				return FILER_EXPLOIT_PROTECT_THIS_CONSOLE;
+			return FILER_EXPLOIT_PROTECT_OTHER_REGION;
+		}
+		if (filerIsMcRootExploitFolderName(root_folder))
+			return FILER_EXPLOIT_PROTECT_GENERIC;
+	} else if (is_xfrom && !stricmp(root_folder, "BIEXEC-SYSTEM")) {
+		return console_is_PSX ? FILER_EXPLOIT_PROTECT_THIS_CONSOLE : FILER_EXPLOIT_PROTECT_GENERIC;
+	}
+
+	if (folder != NULL && folder_size > 0)
+		folder[0] = '\0';
+	return FILER_EXPLOIT_PROTECT_NONE;
+}
+
+int filerIsExploitProtectedPath(const char *path, const FILEINFO *file)
+{
+	return (filerGetExploitProtectionType(path, file, NULL, 0) != FILER_EXPLOIT_PROTECT_NONE);
+}
+
+static int filerConfirmExploitAction(const char *path, const FILEINFO *file, const char *action)
+{
+	char folder[40];
+	char msg[256];
+	int protection_type;
+
+	protection_type = filerGetExploitProtectionType(path, file, folder, sizeof(folder));
+	if (protection_type == FILER_EXPLOIT_PROTECT_NONE)
+		return 1;
+
+	if (protection_type == FILER_EXPLOIT_PROTECT_THIS_CONSOLE) {
+		snprintf(msg, sizeof(msg), "%s\n%s\n%s ?",
+		         folder, LNG(Exploit_Folder_This_Console_Warning), action);
+	} else if (protection_type == FILER_EXPLOIT_PROTECT_OTHER_REGION) {
+		snprintf(msg, sizeof(msg), "%s\n%s\n%s ?",
+		         folder, LNG(Exploit_Folder_Other_Region_Warning), action);
+	} else {
+		snprintf(msg, sizeof(msg), "%s\n%s\n%s ?",
+		         folder, LNG(Exploit_Folder_Warning), action);
+	}
+
+	return ynDialog(msg);
+}
+
+int filerConfirmExploitDelete(const char *path, const FILEINFO *file)
+{
+	return filerConfirmExploitAction(path, file, LNG(Delete));
+}
+
+int filerConfirmExploitModify(const char *path, const FILEINFO *file)
+{
+	return filerConfirmExploitAction(path, file, LNG(Modify));
 }
 
 u64 getFileSize(const char *path, const FILEINFO *file)
@@ -294,6 +454,9 @@ int Rename(const char *path, const FILEINFO *file, const char *name)
 
 	if (!ensurePathDeviceStackReady(path))
 		return -1;
+
+	if (filerIsExploitProtectedPath(path, file))
+		return -EPERM;
 
 	if (!strncmp(path, "hdd", 3)) {
 		if (getHddParty(path, NULL, party, oldPath) < 0)

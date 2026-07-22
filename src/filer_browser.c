@@ -471,6 +471,8 @@ static int menu(const char *path, FILEINFO *file)
 			enable[RENAME] = FALSE;
 			enable[GETSIZE] = FALSE;
 		}
+		if (filerIsExploitProtectedPath(path, file))
+			enable[RENAME] = FALSE;
 	} else {
 		enable[RENAME] = FALSE;
 	}
@@ -1159,6 +1161,25 @@ int getFilePath(char *out, int cnfmode)
 				if (new_pad & PAD_R1) {
 					ret = menu(path, &files[browser_sel]);
 					if (ret == COPY || ret == CUT) {
+						if (ret == CUT) {
+							const FILEINFO *protected_file = NULL;
+
+							if (nmarks > 0) {
+								for (i = 0; i < browser_nfiles; i++) {
+									if (marks[i] && filerIsExploitProtectedPath(path, &files[i])) {
+										protected_file = &files[i];
+										break;
+									}
+								}
+							} else if (filerIsExploitProtectedPath(path, &files[browser_sel]))
+								protected_file = &files[browser_sel];
+							if (protected_file != NULL) {
+								if (filerConfirmExploitModify(path, protected_file) < 0) {
+									browser_pushed = FALSE;
+									continue;
+								}
+							}
+						}
 						strcpy(clipPath, path);
 						if (nmarks > 0) {
 							for (i = nclipFiles = 0; i < browser_nfiles; i++)
@@ -1188,17 +1209,21 @@ int getFilePath(char *out, int cnfmode)
 					}  //ends COPY and CUT
 					else if (ret == DELETE) {
 						if (nmarks == 0) {  //dlanor: using title was inappropriate here (filesystem op)
-							sprintf(tmp, "%s", files[browser_sel].name);
-							if (files[browser_sel].stats.AttrFile & sceMcFileAttrSubdir)
-								strcat(tmp, "/");
-							sprintf(tmp1, "\n%s ?", LNG(Delete));
-							strcat(tmp, tmp1);
-							ret = ynDialog(tmp);
+							if (filerIsExploitProtectedPath(path, &files[browser_sel])) {
+								ret = filerConfirmExploitDelete(path, &files[browser_sel]);
+							} else {
+								sprintf(tmp, "%s", files[browser_sel].name);
+								if (files[browser_sel].stats.AttrFile & sceMcFileAttrSubdir)
+									strcat(tmp, "/");
+								sprintf(tmp1, "\n%s ?", LNG(Delete));
+								strcat(tmp, tmp1);
+								ret = ynDialog(tmp);
+							}
 						} else
 							ret = ynDialog(LNG(Mark_Files_Delete));
 
 						if (ret > 0) {
-							int first_deleted = 0;
+							int first_deleted = -1;
 							if (nmarks == 0) {
 								strcpy(tmp, files[browser_sel].name);
 								if (files[browser_sel].stats.AttrFile & sceMcFileAttrSubdir)
@@ -1207,10 +1232,15 @@ int getFilePath(char *out, int cnfmode)
 								strcat(tmp, tmp1);
 								drawMsg(tmp);
 								ret = delete (path, &files[browser_sel]);
+								if (ret >= 0)
+									first_deleted = browser_sel;
 							} else {
 								for (i = 0; i < browser_nfiles; i++) {
 									if (marks[i]) {
-										if (!first_deleted)     //if this is the first mark
+										if (filerIsExploitProtectedPath(path, &files[i]) &&
+										    filerConfirmExploitDelete(path, &files[i]) < 0)
+											continue;
+										if (first_deleted < 0)   //if this is the first mark
 											first_deleted = i;  //then memorize it for cursor positioning
 										strcpy(tmp, files[i].name);
 										if (files[i].stats.AttrFile & sceMcFileAttrSubdir)
@@ -1225,10 +1255,12 @@ int getFilePath(char *out, int cnfmode)
 								}
 							}
 							if (ret >= 0) {
-								if (nmarks == 0)
-									strcpy(cursorEntry, files[browser_sel - 1].name);
-								else
-									strcpy(cursorEntry, files[first_deleted - 1].name);
+								if (first_deleted >= 0) {
+									int cursor_source = first_deleted - 1;
+									if (cursor_source < 0)
+										cursor_source = 0;
+									strcpy(cursorEntry, files[cursor_source].name);
+								}
 							} else {
 								strcpy(cursorEntry, files[browser_sel].name);
 								sprintf(msg0, "%s Err=%d", LNG(Delete_Failed), ret);
@@ -1239,22 +1271,34 @@ int getFilePath(char *out, int cnfmode)
 						}
 					}  //ends DELETE
 					else if (ret == RENAME) {
-						strcpy(tmp, files[browser_sel].name);
-						if (keyboard(tmp, 36) > 0) {
-							if (Rename(path, &files[browser_sel], tmp) < 0) {
-								browser_pushed = FALSE;
-								strcpy(msg0, LNG(Rename_Failed));
-							} else
-								browser_cd = TRUE;
+						if (filerIsExploitProtectedPath(path, &files[browser_sel])) {
+							browser_pushed = FALSE;
+							strcpy(msg0, LNG(Rename_Failed));
+						} else {
+							strcpy(tmp, files[browser_sel].name);
+							if (keyboard(tmp, 36) > 0) {
+								if (Rename(path, &files[browser_sel], tmp) < 0) {
+									browser_pushed = FALSE;
+									strcpy(msg0, LNG(Rename_Failed));
+								} else
+									browser_cd = TRUE;
+							}
 						}
 					}  //ends RENAME
-					else if (ret == PASTE)
-						submenu_func_Paste(msg0, path);
-					else if (ret == PSUPASTE)
-						submenu_func_psuPaste(msg0, path);
+					else if (ret == PASTE) {
+						if (filerConfirmExploitModify(path, NULL) > 0)
+							submenu_func_Paste(msg0, path);
+						else
+							browser_pushed = FALSE;
+					} else if (ret == PSUPASTE) {
+						if (filerConfirmExploitModify(path, NULL) > 0)
+							submenu_func_psuPaste(msg0, path);
+						else
+							browser_pushed = FALSE;
+					}
 					else if (ret == NEWDIR) {
 						tmp[0] = 0;
-						if (keyboard(tmp, 36) > 0) {
+						if (filerConfirmExploitModify(path, NULL) > 0 && keyboard(tmp, 36) > 0) {
 							ret = newdir(path, tmp);
 							if (ret == -17) {
 								strcpy(msg0, LNG(directory_already_exists));
@@ -1272,8 +1316,12 @@ int getFilePath(char *out, int cnfmode)
 							}
 						}
 					}  //ends NEWDIR
-						else if (ret == NEWICON) {
-							strcpy(tmp, LNG(Icon_Title));
+					else if (ret == NEWICON) {
+						if (filerConfirmExploitModify(path, NULL) < 0) {
+							browser_pushed = FALSE;
+							continue;
+						}
+						strcpy(tmp, LNG(Icon_Title));
 							if (keyboard(tmp, 36) <= 0)
 								goto DoneIcon;
 							if (genFixPath(path, tmp1) < 0) {
@@ -1363,12 +1411,15 @@ int getFilePath(char *out, int cnfmode)
 						}
 					}  //ends MOUNTVMCx
 					else if (ret == OPEN_TEXTEDITOR) {
-						snprintf(tmp1, sizeof(tmp1), "%s%s", path, files[browser_sel].name);
-						TextEditor(tmp1);
-						strcpy(cursorEntry, files[browser_sel].name);
-						browser_pushed = FALSE;
-						browser_repos = TRUE;
-						browser_cd = TRUE;
+						if (filerConfirmExploitModify(path, &files[browser_sel]) > 0) {
+							snprintf(tmp1, sizeof(tmp1), "%s%s", path, files[browser_sel].name);
+							TextEditor(tmp1);
+							strcpy(cursorEntry, files[browser_sel].name);
+							browser_pushed = FALSE;
+							browser_repos = TRUE;
+							browser_cd = TRUE;
+						} else
+							browser_pushed = FALSE;
 					}  //ends OPEN_TEXTEDITOR
 					else if (ret == GETSIZE) {
 						submenu_func_GetSize(msg0, path, files);
@@ -1380,7 +1431,7 @@ int getFilePath(char *out, int cnfmode)
 #else
 						sprintf(msg1, "\n\n %s  [%s]  ?\n", LNG(change_timestamp_of), files[browser_sel].name);
 #endif //TMANIP_MORON
-						if (ynDialog(msg1) > 0) {
+						if (filerConfirmExploitModify(path, &files[browser_sel]) > 0 && ynDialog(msg1) > 0) {
 							time_manip(path, &files[browser_sel], msg0);
 							browser_pushed = FALSE;
 							browser_repos = TRUE;  // TEST
@@ -1390,10 +1441,13 @@ int getFilePath(char *out, int cnfmode)
 //#endif //TMANIP
 
 				else if (ret == TITLE_CFG) {
-					make_title_cfg(path, &files[browser_sel], msg0);
-					browser_pushed = FALSE;
-					browser_repos = TRUE;  // TEST
-					browser_cd = TRUE;     //TEST
+					if (filerConfirmExploitModify(path, &files[browser_sel]) > 0) {
+						make_title_cfg(path, &files[browser_sel], msg0);
+						browser_pushed = FALSE;
+						browser_repos = TRUE;  // TEST
+						browser_cd = TRUE;     //TEST
+					} else
+						browser_pushed = FALSE;
 				}
 				   //R1 menu handling is completed above
 			} else if ((!swapKeys && new_pad & PAD_CROSS) || (swapKeys && new_pad & PAD_CIRCLE)) {
@@ -1963,6 +2017,10 @@ static void subfunc_Paste(char *mess, char *path)
 	}
 	if ((ret >= 0) && browser_cut) {
 		for (i = 0; i < nclipFiles; i++) {
+			if (filerConfirmExploitDelete(clipPath, &clipFiles[i]) < 0) {
+				ret = -1;
+				break;
+			}
 			ret = delete (clipPath, &clipFiles[i]);
 			if (ret < 0)
 				break;

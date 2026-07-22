@@ -61,6 +61,7 @@ static const int hdd_party_menu_items[] = {
 
 #define SECTORS_PER_MB 2048  //Divide by this to convert from sector count to MB
 #define MB 1048576
+#define HDD_PARTITION_CREATE_CANCELLED (-EINTR)
 
 /* local fallback for newer SDKs that do not provide floatlib degree trig helpers */
 #ifndef WLE_DEG_TO_RADF
@@ -78,6 +79,102 @@ static int numParty;
 static u32 hddSize, hddFree, hddFreeSpace, hddUsed;
 static int hddConnected, hddFormated, hddRealStatus;
 static HddHeaderSourcePartition hdd_header_source_partitions[MAX_PARTITIONS];
+
+static int HddConfirmTwoButtonDialog(const char *message, const char *decline_label)
+{
+	char msg[512];
+	int dh, dw, dx, dy;
+	int sel = 0, a = 6, b = 4, c = 2, n, tw;
+	int i, len, ret;
+	int left_x, right_x, y;
+	int button_width;
+	int event, post_event = 0;
+
+	snprintf(msg, sizeof(msg), "%s", message);
+	msg[sizeof(msg) - 1] = '\0';
+
+	for (i = 0, n = 1; msg[i] != 0; i++) {
+		if (msg[i] == '\n') {
+			msg[i] = 0;
+			n++;
+		}
+	}
+	for (i = len = tw = 0; i < n; i++) {
+		ret = printXY(&msg[len], 0, 0, 0, FALSE, 0);
+		if (ret > tw)
+			tw = ret;
+		len += strlen(&msg[len]) + 1;
+	}
+
+	button_width = (strlen(LNG(OK)) + strlen(decline_label) + 6) * FONT_WIDTH;
+	if (tw < button_width)
+		tw = button_width;
+
+	dh = FONT_HEIGHT * (n + 1) + 2 * 2 + a + b + c;
+	dw = 2 * 2 + a * 2 + tw;
+	dx = (SCREEN_WIDTH - dw) / 2;
+	dy = (SCREEN_HEIGHT - dh) / 2;
+	left_x = dx + a + FONT_WIDTH;
+	right_x = dx + dw - a - (strlen(decline_label) + 1) * FONT_WIDTH;
+	y = dy + a + b + 2 + n * FONT_HEIGHT;
+
+	event = 1;
+	while (1) {
+		waitPadReady(0, 0);
+		if (readpad()) {
+			if (new_pad & PAD_LEFT) {
+				event |= 2;
+				sel = 0;
+			} else if (new_pad & PAD_RIGHT) {
+				event |= 2;
+				sel = 1;
+			} else if ((!swapKeys && new_pad & PAD_CROSS) || (swapKeys && new_pad & PAD_CIRCLE)) {
+				ret = -1;
+				break;
+			} else if ((swapKeys && new_pad & PAD_CROSS) || (!swapKeys && new_pad & PAD_CIRCLE)) {
+				ret = (sel == 0) ? 1 : -1;
+				break;
+			}
+		}
+
+		if (event || post_event) {
+			drawPopSprite(setting->color[COLOR_BACKGR],
+			              dx, dy,
+			              dx + dw, (dy + dh));
+			drawFrame(dx, dy, dx + dw, (dy + dh), setting->color[COLOR_FRAME]);
+			for (i = len = 0; i < n; i++) {
+				printXY(&msg[len], dx + 2 + a, (dy + a + 2 + i * FONT_HEIGHT), setting->color[COLOR_TEXT], TRUE, 0);
+				len += strlen(&msg[len]) + 1;
+			}
+
+			printXY(LNG(OK), left_x, y, setting->color[COLOR_TEXT], TRUE, 0);
+			printXY(decline_label, right_x, y, setting->color[COLOR_TEXT], TRUE, 0);
+			if (sel == 0)
+				drawChar(LEFT_CUR, left_x - FONT_WIDTH, y, setting->color[COLOR_TEXT]);
+			else
+				drawChar(LEFT_CUR, right_x - FONT_WIDTH - 1, y, setting->color[COLOR_TEXT]);
+		}
+		drawLastMsg();
+		post_event = event;
+		event = 0;
+	}
+	drawSprite(setting->color[COLOR_BACKGR], dx, dy, dx + dw + 1, (dy + dh) + 1);
+	drawScr();
+	drawSprite(setting->color[COLOR_BACKGR], dx, dy, dx + dw + 1, (dy + dh) + 1);
+	drawScr();
+	return ret;
+}
+
+static int ConfirmProtectedPartitionCreate(const char *party, int skip_instead_of_cancel)
+{
+	if (party == NULL || strncmp(party, "__", 2))
+		return 1;
+
+	if (skip_instead_of_cancel)
+		return (HddConfirmTwoButtonDialog(LNG(Protected_Partition_Create_Warning), LNG(Skip)) == 1);
+
+	return (ynDialog(LNG(Protected_Partition_Create_Warning)) == 1);
+}
 
 static char DbgMsg[MAX_TEXT_LINE * 30];
 
@@ -787,8 +884,6 @@ int CreateParty(char *party, int size)
 	char tmpName[MAX_ENTRY];
 	//	t_hddFilesystem hddFs[MAX_PARTITIONS];
 
-	drawMsg(LNG(Creating_New_Partition));
-
 	tmpName[0] = 0;
 	sprintf(tmpName, "%s", party);
 	for (i = 0; i < MAX_PARTITIONS; i++) {
@@ -798,6 +893,12 @@ int CreateParty(char *party, int size)
 		}
 	}
 	strcpy(party, tmpName);
+
+	if (!ConfirmProtectedPartitionCreate(party, 0))
+		return HDD_PARTITION_CREATE_CANCELLED;
+
+	drawMsg(LNG(Creating_New_Partition));
+
 	/*	if(remSize <= 0)*/
 	ret = hddMakeFilesystem(size, party, FS_GROUP_APPLICATION);
 	/*	else{
@@ -825,7 +926,7 @@ int CreateParty(char *party, int size)
 //------------------------------
 //endfunc CreateParty
 //--------------------------------------------------------------
-static int CreatePartyExact(const char *party, int size)
+static int CreatePartyExact(const char *party, int size, int skip_instead_of_cancel)
 {
 	char party_name[MAX_PART_NAME + 1];
 	int ret;
@@ -835,6 +936,9 @@ static int CreatePartyExact(const char *party, int size)
 
 	snprintf(party_name, sizeof(party_name), "%s", party);
 	party_name[sizeof(party_name) - 1] = '\0';
+
+	if (!ConfirmProtectedPartitionCreate(party_name, skip_instead_of_cancel))
+		return HDD_PARTITION_CREATE_CANCELLED;
 
 	drawMsg(LNG(Creating_New_Partition));
 
@@ -1120,14 +1224,14 @@ static int HeaderCreateMissingDialog(const char *partition_name)
 	int label_x[3];
 	const char *labels[3];
 	int sel = 0, a = 6, b = 4, c = 2, n, tw;
-	int i, y, len, ret;
+	int i, y, len, ret, labels_width;
 	int event, post_event = 0;
 
 	snprintf(msg, sizeof(msg), "Create missing partition?\nhdd0:%s", partition_name);
 	msg[sizeof(msg) - 1] = '\0';
 
-	labels[0] = LNG(YES);
-	labels[1] = LNG(NO);
+	labels[0] = LNG(OK);
+	labels[1] = LNG(Skip);
 	labels[2] = LNG(CANCEL);
 
 	for (i = 0, n = 1; msg[i] != 0; i++) {
@@ -1141,11 +1245,14 @@ static int HeaderCreateMissingDialog(const char *partition_name)
 		if (ret > tw)
 			tw = ret;
 		len += strlen(&msg[len]) + 1;
-	}
-	if (tw < 176)
-		tw = 176;
+		}
+		if (tw < 176)
+			tw = 176;
+		labels_width = (strlen(labels[0]) + strlen(labels[1]) + strlen(labels[2]) + 8) * FONT_WIDTH;
+		if (tw < labels_width)
+			tw = labels_width;
 
-	dh = FONT_HEIGHT * (n + 1) + 2 * 2 + a + b + c;
+		dh = FONT_HEIGHT * (n + 1) + 2 * 2 + a + b + c;
 	dw = 2 * 2 + a * 2 + tw;
 	dx = (SCREEN_WIDTH - dw) / 2;
 	dy = (SCREEN_HEIGHT - dh) / 2;
@@ -1330,8 +1437,11 @@ static void InjectMatchingHeadersFromSource(const char *source_device, int creat
 			break;
 		}
 
-		ret = CreatePartyExact(hdd_header_source_partitions[i].name, party_size);
-		if (ret > 0) {
+		ret = CreatePartyExact(hdd_header_source_partitions[i].name, party_size, 1);
+		if (ret == HDD_PARTITION_CREATE_CANCELLED) {
+			stats.Skipped++;
+			continue;
+		} else if (ret > 0) {
 			stats.Created++;
 			invalidatePartitionCaches();
 			InjectHeaderIntoPartition(hdd_header_source_partitions[i].name, source_device, &stats);
