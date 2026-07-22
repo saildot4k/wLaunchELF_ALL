@@ -175,6 +175,18 @@ static int hddHeaderBuildCandidateDir(char *out, size_t out_size, const char *so
 	return (written >= 0 && written < (int)out_size) ? 0 : -ENAMETOOLONG;
 }
 
+static int hddHeaderBuildSourceRootDir(char *out, size_t out_size, const char *source_device)
+{
+	int written;
+
+	if (out == NULL || out_size == 0 || source_device == NULL)
+		return -EINVAL;
+
+	written = snprintf(out, out_size, "%s/__Headers/", source_device);
+
+	return (written >= 0 && written < (int)out_size) ? 0 : -ENAMETOOLONG;
+}
+
 static int hddHeaderPrepareSourceDevice(const char *source_device)
 {
 	if (source_device == NULL)
@@ -223,6 +235,128 @@ static int hddHeaderFindSourceDir(const char *source_device, const char *partiti
 	}
 
 	return ret;
+}
+
+static int hddHeaderSourceRootReady(const char *source_device)
+{
+	char source_root[MAX_PATH];
+	int fd;
+	int ret;
+
+	ret = hddHeaderBuildSourceRootDir(source_root, sizeof(source_root), source_device);
+	if (ret < 0)
+		return ret;
+
+	fd = genDopen(source_root);
+	if (fd < 0)
+		return fd;
+
+	genDclose(fd);
+	return 0;
+}
+
+static int hddHeaderWaitForSourceRoot(const char *source_device)
+{
+	char msg[MAX_TEXT_LINE];
+	u64 start_time;
+	int ret = -ENOENT;
+
+	start_time = Timer();
+	while (Timer() < start_time + HDD_HEADER_SOURCE_WAIT_MS) {
+		ret = hddHeaderPrepareSourceDevice(source_device);
+		if (ret >= 0)
+			ret = hddHeaderSourceRootReady(source_device);
+		if (ret >= 0)
+			return 0;
+
+		snprintf(msg, sizeof(msg), "Waiting for header folders on %s", source_device);
+		drawMsg(msg);
+		hddHeaderDelay(HDD_HEADER_SOURCE_POLL_MS);
+	}
+
+	return ret;
+}
+
+static int hddHeaderSourceEntryIsDir(const char *source_root, const char *name, int mode)
+{
+	char path[MAX_PATH];
+	iox_stat_t stat;
+	int ret;
+
+	if (FIO_S_ISDIR(mode))
+		return 1;
+
+	ret = hddHeaderJoinPath(path, sizeof(path), source_root, name);
+	if (ret < 0)
+		return 0;
+	ret = genGetStat(path, &stat);
+	if (ret < 0)
+		return 0;
+
+	return FIO_S_ISDIR(stat.mode);
+}
+
+int HddHeaderListSourcePartitions(const char *source_device, HddHeaderSourcePartition *partitions, int max_partitions, int *invalid_count)
+{
+	char source_root[MAX_PATH];
+	iox_dirent_t dirent;
+	size_t name_len;
+	int invalid = 0;
+	int count = 0;
+	int fd;
+	int ret;
+
+	if (source_device == NULL || source_device[0] == '\0' || partitions == NULL || max_partitions <= 0)
+		return -EINVAL;
+	if (invalid_count != NULL)
+		*invalid_count = 0;
+
+	ret = hddHeaderWaitForSourceRoot(source_device);
+	if (ret < 0)
+		return ret;
+
+	ret = hddHeaderBuildSourceRootDir(source_root, sizeof(source_root), source_device);
+	if (ret < 0)
+		return ret;
+
+	fd = genDopen(source_root);
+	if (fd < 0)
+		return fd;
+
+	while (fileXioDread(fd, &dirent) > 0) {
+		if (!strcmp(dirent.name, ".") || !strcmp(dirent.name, ".."))
+			continue;
+		if (!hddHeaderSourceEntryIsDir(source_root, dirent.name, dirent.stat.mode))
+			continue;
+
+		name_len = strlen(dirent.name);
+		if (name_len == 0 || name_len > HDD_HEADER_SOURCE_PARTITION_NAME_MAX) {
+			invalid++;
+			continue;
+		}
+
+		ret = hddHeaderFindSourceDir(source_device, dirent.name, NULL, 0);
+		if (ret < 0) {
+			invalid++;
+			continue;
+		}
+
+		if (count >= max_partitions) {
+			genDclose(fd);
+			return -ENOMEM;
+		}
+
+		snprintf(partitions[count].name, sizeof(partitions[count].name), "%s", dirent.name);
+		partitions[count].name[sizeof(partitions[count].name) - 1] = '\0';
+		count++;
+	}
+
+	genDclose(fd);
+
+	if (invalid_count != NULL)
+		*invalid_count = invalid;
+
+	return count;
 }
 
 static int hddHeaderWaitForSource(const char *source_device, const char *partition_name, char *source_dir, size_t source_dir_size)

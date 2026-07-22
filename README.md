@@ -51,6 +51,13 @@ Dual HDD/ATA support is built in for future development.
 
 The HDD Manager R1 menu includes `Inject Header` for PFS partitions.
 Source devices are `usb:`, `mmce0:`, `mmce1:`, and `udpfs:`.
+After choosing a source device, choose one injection mode:
+
+| Mode | Behavior |
+|---|---|
+| `This partition only` | Injects only the currently selected PFS partition from `device:/__Headers/<selected partition>/`. |
+| `Matching partitions` | Scans `device:/__Headers/` and injects every existing PFS partition with a matching folder name. |
+| `Matching and create missing partitions` | Injects existing matches, then prompts for each valid header folder that has no matching partition. `No` skips that folder and continues; cancel stops the bulk operation. |
 
 Header files must be placed in a flat folder matching the partition name:
 
@@ -67,7 +74,7 @@ Header files must be placed in a flat folder matching the partition name:
 | `info.sys` | Optional | `pfs:/res/info.sys` | N/A | Partition information used by PSBBN or PSX XMB | See [example](#example-infosys). |
 | `jkt_001.png` | Optional | `pfs0:/res/jkt_001.png` | N/A | PSBBN image | 256x256 PNG 8-bit indexed color 32-bit RGBA palette. |
 | `jkt_002.png` | Optional | `pfs0:/res/jkt_002.png` | N/A | PSX XMB image | 76x108 PNG 8-bit indexed color 32-bit RGBA palette. |
-| `jkt_cp.png` | Optional | `pfs0:/res/jkt_cp.png` | N/A | PSX XMB copyright image | 90 pixels wide, 46-300 pixels high, 32-bit RGBA PNG. |
+| `jkt_cp.png` | Optional | `pfs0:/res/jkt_cp.png` | N/A | PSX XMB copyright image | 290 pixels wide, 46-300 pixels high, 32-bit RGBA PNG. |
 
 #### Example system.cnf
 
