@@ -402,3 +402,4 @@ lang(400, Exploit_Complete_boot_missing, "Install desired app at mc%d:/BOOT/BOOT
 lang(401, Exploit_Mode_canceled, "%s canceled on mc%d:.")
 lang(402, Inject_Header, "Wstrzyknij naglowek")
 lang(403, Header_Source, "Zrodlo naglowka")
+lang(404, Status_Info, "Info statusu")
