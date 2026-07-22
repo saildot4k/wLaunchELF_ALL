@@ -526,8 +526,6 @@ int genWrite(int fd, void *buf, int size);
 int genClose(int fd);
 int genDopen(char *path);
 int genDclose(int fd);
-int genGetStat(const char *path, iox_stat_t *stat);
-int genMkdir(const char *path, int mode);
 int genRemove(char *path);
 int genRmdir(char *path);
 int genCmpFileExt(const char *filename, const char *extension);

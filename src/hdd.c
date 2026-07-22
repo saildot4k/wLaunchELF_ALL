@@ -67,67 +67,6 @@ static int hddConnected, hddFormated, hddRealStatus;
 
 static char DbgMsg[MAX_TEXT_LINE * 30];
 
-typedef struct
-{
-	int Code;
-	const char *ShortText;
-	const char *InfoText;
-} HDDSTATUSINFO;
-
-static const HDDSTATUSINFO HddStatusInfo[] = {
-	{3, "NO HDD", "No suitable HDD was detected by the HDD driver.\nCheck the drive, adapter, power, DEV9, or ATA stack."},
-	{2, "LOCKED", "The HDD was detected, but the driver could not\ncomplete the unlock/usability check."},
-	{1, "NO APA", "The HDD is usable, but no APA format was found.\nFormat the HDD before creating partitions."},
-	{0, "READY", "The HDD is detected, usable, and APA formatted."},
-	{-1, "EPERM", "Operation not permitted.\nThe HDD driver refused the status operation."},
-	{-2, "ENOENT", "The HDD device/path was not found.\nhdd0: may not be registered by the driver."},
-	{-3, "ESRCH", "A required service or RPC target was not found.\nHDD modules may not be running correctly."},
-	{-5, "EIO", "I/O error while querying the HDD.\nCheck the drive, adapter, cabling, and power."},
-	{-6, "ENXIO", "No such device or address.\nThe HDD hardware may be missing or unreachable."},
-	{-11, "EAGAIN", "The HDD resource is temporarily unavailable.\nRetry after the HDD stack settles."},
-	{-12, "ENOMEM", "Out of memory while querying HDD status.\nSystem or module memory may be exhausted."},
-	{-13, "EACCES", "Access denied while querying HDD status.\nThe device or driver state refused access."},
-	{-16, "EBUSY", "The HDD/device resource is busy.\nAnother operation or mount may be holding it."},
-	{-19, "ENODEV", "No such device.\nHDD driver/device registration may be missing."},
-};
-
-static const HDDSTATUSINFO *GetHddStatusInfo(int status)
-{
-	int i;
-
-	for (i = 0; i < (int)(sizeof(HddStatusInfo) / sizeof(HddStatusInfo[0])); i++) {
-		if (HddStatusInfo[i].Code == status)
-			return &HddStatusInfo[i];
-	}
-
-	return NULL;
-}
-
-static const char *GetHddStatusShortText(int status)
-{
-	const HDDSTATUSINFO *info = GetHddStatusInfo(status);
-
-	return (info != NULL) ? info->ShortText : "UNKNOWN";
-}
-
-void DebugDisp(char *Message);
-
-static void ShowHddStatusInfo(void)
-{
-	const HDDSTATUSINFO *info = GetHddStatusInfo(hddRealStatus);
-	char message[MAX_TEXT_LINE * 30];
-
-	if (info != NULL) {
-		snprintf(message, sizeof(message), "%s\nNumber: %d\nStatus: %s\n\n%s",
-		         LNG(HDD_STATUS), hddRealStatus, info->ShortText, info->InfoText);
-	} else {
-		snprintf(message, sizeof(message), "%s\nNumber: %d\nStatus: UNKNOWN\n\nNo specific HDD status description is available\nfor this code.",
-		         LNG(HDD_STATUS), hddRealStatus);
-	}
-
-	DebugDisp(message);
-}
-
 //--------------------------------------------------------------
 ///*
 void DebugDisp(char *Message)
@@ -978,8 +917,6 @@ void hddManager(void)
 				unmountParty(0);  //unconditionally unmount primary mountpoint
 				unmountParty(1);  //unconditionally unmount secondary mountpoint
 				return;
-			} else if (new_pad & PAD_L1) {
-				ShowHddStatusInfo();
 			} else if (new_pad & PAD_SQUARE) {
 				if (PartyInfo[browser_sel].Treatment == TREAT_HDL_RAW) {
 					loadHdlInfoModule();
@@ -1115,7 +1052,7 @@ void hddManager(void)
 
 			y = Menu_start_y;
 
-			snprintf(c, sizeof(c), "%s: %d %s", LNG(HDD_STATUS), hddRealStatus, GetHddStatusShortText(hddRealStatus));
+			sprintf(c, "%s: %d", LNG(HDD_STATUS), hddRealStatus);
 			x = ((((SCREEN_WIDTH / 2 - 25) - Menu_start_x) / 2) + Menu_start_x) - (strlen(c) * FONT_WIDTH) / 2;
 			printXY(c, x, y, setting->color[COLOR_TEXT], TRUE, 0);
 
@@ -1352,9 +1289,9 @@ void hddManager(void)
 				}  //ends clause for scrollbar
 			}      //ends hdd formated
 			//Tooltip section
-			snprintf(tooltip, sizeof(tooltip), "R1:%s L1:%s  \xFF"
-			                                   "3:%s",
-			         LNG(MENU), LNG(Status_Info), LNG(Exit));
+			sprintf(tooltip, "R1:%s  \xFF"
+			                 "3:%s",
+			        LNG(MENU), LNG(Exit));
 			if (PartyInfo[browser_sel].Treatment == TREAT_HDL_RAW) {
 				sprintf(tmp, " \xFF"
 				             "2:%s",
