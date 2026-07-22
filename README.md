@@ -39,9 +39,36 @@ Dual HDD/ATA support is built in for future development.
 - Extra file extensions for Text Editor ShortCuts
 - Timestamp manipulation feature to fix the date of any memory card folder containing any icon-based exploit _(\*tuna)_
 - Launch KELFs (encrypted elfs)
+- [LaunchELF with Args](#launchelf-with-args)
 - [APA Header injection](#HDD-APA-header-injection)
 - Support for PS3/PS4 Dualshocks thanks to Alex Parrado (DS34 build)
 
+
+<details>
+
+<summary>LaunchELF with Args</summary>
+
+### LaunchELF with Args
+
+In FileBrowser, select a TextEditor-supported file, press `R1`, then choose `LaunchELF with Args`.
+wLaunchELF parses the file immediately, caches the args in memory, and leaves you in FileBrowser to select the target `ELF`, `KELF`, or `XLF`.
+
+The same action is available from TextEditor's `R1` menu for the active opened file.
+From TextEditor the current in-memory buffer is parsed, so unsaved edits are used.
+After caching args, wLaunchELF returns to FileBrowser so you can choose the target executable.
+
+Each non-empty line becomes one argument.
+Line endings are stripped; other characters on the line are preserved.
+
+| Limit | Value |
+|---|---:|
+| User arguments | 12 lines |
+| Characters per argument | 255 |
+| Total cached argument text | 2,048 bytes including terminators |
+
+The target receives the normal selected/handoff path as `argv[0]`, followed by the cached line arguments.
+
+</details>
 
 <details>
 

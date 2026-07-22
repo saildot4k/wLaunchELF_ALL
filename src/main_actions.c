@@ -51,6 +51,30 @@ static int isMbrLaunchPath(const char *path)
 }
 #endif
 
+static void executeBrowserSelection(char *selected_path, const MainExecuteContext *ctx)
+{
+	while (selected_path[0]) {
+		if (IsTextEditorFileType(selected_path)) {
+			if (TextEditor(selected_path) == TEXTEDITOR_RESULT_LAUNCH_ARGS) {
+				selected_path[0] = 0;
+				getFilePath(selected_path, FALSE);
+				if (!selected_path[0])
+					LaunchArgsClear();
+				continue;
+			}
+			LaunchArgsClear();
+		} else {
+			if (LaunchArgsPending() &&
+			    !genCmpFileExt(selected_path, "ELF") &&
+			    !genCmpFileExt(selected_path, "KELF") &&
+			    !genCmpFileExt(selected_path, "XLF"))
+				LaunchArgsClear();
+			ExecuteMainAction(selected_path, ctx);
+		}
+		break;
+	}
+}
+
 // Execute. Execute an action. May be called recursively.
 // For any path specified, its device must be accessible.
 //------------------------------
@@ -73,6 +97,12 @@ void ExecuteMainAction(char *pathin, const MainExecuteContext *ctx)
 
 	if (!uLE_related(path, pathin))  //1==uLE_rel 0==missing, -1==other dev
 		return;
+
+	if (LaunchArgsPending() &&
+	    !genCmpFileExt(path, "ELF") &&
+	    !genCmpFileExt(path, "KELF") &&
+	    !genCmpFileExt(path, "XLF"))
+		LaunchArgsClear();
 
 Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 
@@ -109,6 +139,7 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 
 		x = setting->reboot_iop_elf_load;
 		CleanUpForExec();
+		LaunchArgsClear();
 		RunLoaderMemory("rom0:HDDBOOT", mbr_mem_arg, x);
 		return;
 	}
@@ -404,13 +435,7 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 		tmp[0] = 0;
 		LastDir[0] = 0;
 		getFilePath(tmp, FALSE);
-		if (tmp[0]) {
-			if (IsTextEditorFileType(tmp)) {
-
-				TextEditor(tmp);
-			} else
-				ExecuteMainAction(tmp, ctx);
-		}
+		executeBrowserSelection(tmp, ctx);
 		return;
 	} else if (!stricmp(path, setting->Misc_PS2Browser)) {
 		char *args[1] = {"BootBrowser"};
@@ -434,7 +459,13 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 		hddManager();
 		return;
 	} else if (!stricmp(path, setting->Misc_TextEditor)) {
-		TextEditor(NULL);
+		if (TextEditor(NULL) == TEXTEDITOR_RESULT_LAUNCH_ARGS) {
+			tmp[0] = 0;
+			getFilePath(tmp, FALSE);
+			if (!tmp[0])
+				LaunchArgsClear();
+			executeBrowserSelection(tmp, ctx);
+		}
 		return;
 	} else if (!stricmp(path, setting->Misc_Configure)) {
 		Load_External_Language();
@@ -502,6 +533,7 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 	} else {  //Invalid path
 		t = 0;
 	ELFnotFound:
+		LaunchArgsClear();
 		if (t == 0)
 			sprintf(ctx->main_msg, "%s %s.", fullpath, LNG(is_Not_Found));
 		else
