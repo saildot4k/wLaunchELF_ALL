@@ -14,7 +14,7 @@
 #define ULE_VERSION_DEBUG_SUFFIX ""
 #endif
 
-#define ULE_VERSION "v4.70_R3Z" ULE_VERSION_DEBUG_SUFFIX
+#define ULE_VERSION "v4.75_R3Z" ULE_VERSION_DEBUG_SUFFIX
 //#ifndef ULE_VERDATE
 //#define ULE_VERDATE __DATE__
 //#endif
@@ -345,6 +345,7 @@ extern char SystemCnf_BOOT2[MAX_PATH];
 extern char SystemCnf_VER[10];
 extern char SystemCnf_VMODE[10];
 extern char ROMVER_data[16];
+extern char rough_region;
 
 #ifdef MX4SIO
 extern u8 mx4sio_driver_running;
