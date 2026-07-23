@@ -153,6 +153,8 @@ int readGENERIC(const char *path, FILEINFO *info, int max);
 #define USB_DISCOVERY_ATTEMPTS 3
 #define USB_DISCOVERY_SETTLE_MS 500
 #define ROOT_MC_POLL_INTERVAL_MS 500
+#define MC_BROWSER_RETRY_COUNT 4
+#define MC_BROWSER_RETRY_DELAY_US 100000
 
 static int root_mc_present[2] = {1, 1};
 static int root_mc_poll_active = 0;
@@ -287,24 +289,64 @@ static int readGENERICWithFirstOpenRetry(const char *path, FILEINFO *info, int m
 
 //--------------------------------------------------------------
 //--------------------------------------------------------------
+static int waitMemoryCardReadyForBrowse(int port)
+{
+	int attempt, start_ret, ret;
+
+	ret = sceMcResFailDetect;
+	for (attempt = 0; attempt < MC_BROWSER_RETRY_COUNT; attempt++) {
+		mcSync(0, NULL, NULL);
+		start_ret = mcGetInfo(port, 0, &mctype_PSx, NULL, NULL);
+		if (start_ret < 0)
+			ret = start_ret;
+		else
+			mcSync(0, NULL, &ret);
+
+		if (ret == sceMcResSucceed)
+			return sceMcResSucceed;
+		if (ret == sceMcResChangedCard) {
+			if (attempt + 1 == MC_BROWSER_RETRY_COUNT)
+				return sceMcResSucceed;
+		} else
+			break;
+		DelayThread(MC_BROWSER_RETRY_DELAY_US);
+	}
+
+	return ret;
+}
+
 int readMC(const char *path, FILEINFO *info, int max)
 {
 	static sceMcTblGetDir mcDir[MAX_ENTRY] __attribute__((aligned(64)));
 	char dir[MAX_PATH];
-	int i, j, ret;
+	int i, j, port, ret;
 
-	mcSync(0, NULL, NULL);
+	port = path[2] - '0';
+	if (port < 0 || port > 1)
+		return 0;
 
-	mcGetInfo(path[2] - '0', 0, &mctype_PSx, NULL, NULL);
-	mcSync(0, NULL, &ret);
+	ret = waitMemoryCardReadyForBrowse(port);
 	if (mctype_PSx == 2)  //PS2 MC ?
 		time_valid = 1;
 	size_valid = 1;
+	if (ret != sceMcResSucceed)
+		return 0;
 
 	strcpy(dir, &path[4]);
 	strcat(dir, "*");
-	mcGetDir(path[2] - '0', 0, dir, 0, MAX_ENTRY - 2, mcDir);
-	mcSync(0, NULL, &ret);
+	for (i = 0; i < MC_BROWSER_RETRY_COUNT; i++) {
+		mcGetDir(port, 0, dir, 0, MAX_ENTRY - 2, mcDir);
+		mcSync(0, NULL, &ret);
+		if (ret >= 0)
+			break;
+		if (ret != sceMcResChangedCard)
+			break;
+		if (waitMemoryCardReadyForBrowse(port) != sceMcResSucceed)
+			break;
+		DelayThread(MC_BROWSER_RETRY_DELAY_US);
+	}
+	if (ret < 0)
+		return 0;
 
 	for (i = j = 0; i < ret; i++) {
 		if (mcDir[i].AttrFile & sceMcFileAttrSubdir &&
