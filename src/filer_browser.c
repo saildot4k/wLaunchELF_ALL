@@ -1540,6 +1540,8 @@ int getFilePath(char *out, int cnfmode)
 				browser_pushed = FALSE;
 				rebootIopAndReloadCoreStackSilent();
 				path[0] = '\0';
+				strcpy(cursorEntry, "udpfs:");
+				browser_repos = TRUE;
 				browser_nfiles = setFileList(path, ext, files, cnfmode);
 			}
 #endif

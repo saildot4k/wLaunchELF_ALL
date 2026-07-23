@@ -16,7 +16,7 @@ wLaunchELF, formerly known as uLaunchELF, also known as wLE or uLE (abbreviated)
 | __cdfs:/__ | CD/DVD File System | Always |
 | __udpfs:/__ | Network interface used with [PCM720s UDPFSD Server](https://github.com/pcm720/udpfsd) | Always |
 
-Drivers load on demand for for maximum compatibility and initial boot speed.
+Drivers load on demand for maximum compatibility and initial boot speed.
 
 [^1]: MMCE and MX4SIO will incure an IOP reboot as the 2 are incompatible.
 
