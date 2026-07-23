@@ -135,15 +135,17 @@ static int launchArgsFinishParse(const char *source, const char *line, int line_
 static int launchArgsReadFromFd(const char *source, int fd, char *message, size_t message_size)
 {
 	char line[LAUNCH_ARG_MAX_LINE + 1];
-	unsigned char ch;
-	int rd, line_len, skip_lf;
+	unsigned char buffer[512];
+	int i, rd, line_len, skip_lf;
 
 	line_len = 0;
 	skip_lf = 0;
-	while ((rd = genRead(fd, &ch, 1)) > 0) {
-		if (launchArgsParseChar(ch, line, &line_len, &skip_lf, message, message_size) < 0) {
-			genClose(fd);
-			return -1;
+	while ((rd = genRead(fd, buffer, (int)sizeof(buffer))) > 0) {
+		for (i = 0; i < rd; i++) {
+			if (launchArgsParseChar(buffer[i], line, &line_len, &skip_lf, message, message_size) < 0) {
+				genClose(fd);
+				return -1;
+			}
 		}
 	}
 	genClose(fd);
