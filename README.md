@@ -39,15 +39,45 @@ Dual HDD/ATA support is built in for future development.
 - Extra file extensions for Text Editor ShortCuts
 - Timestamp manipulation feature to fix the date of any memory card folder containing any icon-based exploit _(\*tuna)_
 - Launch KELFs (encrypted elfs)
+- [LaunchELF with Args](#launchelf-with-args)
 - [APA Header injection](#HDD-APA-header-injection)
 - Support for PS3/PS4 Dualshocks thanks to Alex Parrado (DS34 build)
 
+### LaunchELF with Args
+
+<details>
+
+<summary>LaunchELF with Args</summary>
+
+In FileBrowser, select a TextEditor-supported file, press `R1`, then choose `LaunchELF with Args`.
+wLaunchELF parses the file immediately, caches the args in memory, and leaves you in FileBrowser to select the target `ELF`.
+
+The same action is available from TextEditor's `R1` menu for the active opened file.
+From TextEditor the current in-memory buffer is parsed, so unsaved edits are used.
+After caching args, wLaunchELF returns to FileBrowser so you can choose the target executable.
+
+For normal executable launches, wLaunchELF also checks for a sidecar arg file named `<elf name>.arg` in the same folder, for example `BOOT.arg` for `BOOT.ELF`.
+Sidecar args use the same parser and limits.
+If args were already cached through `R1` -> `LaunchELF with Args`, the sidecar `.arg` file is ignored.
+
+Each non-empty line becomes one argument.
+Line endings are stripped; other characters on the line are preserved.
+
+| Limit | Value |
+|---|---:|
+| User arguments | 12 lines |
+| Characters per argument | 255 |
+| Total cached argument text | 2,048 bytes including terminators |
+
+The target receives the normal selected/handoff path as `argv[0]`, followed by the cached line arguments.
+
+</details>
+
+### HDD APA header injection
 
 <details>
 
 <summary>HDD APA header injection</summary>
-
-### HDD APA header injection
 
 The HDD Manager R1 menu includes `Inject Header` for PFS partitions.
 Source devices are `usb:`, `mmce0:`, `mmce1:`, and `udpfs:`.

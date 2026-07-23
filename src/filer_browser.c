@@ -392,6 +392,7 @@ static int menu(const char *path, FILEINFO *file)
 	menu_len = strlen(LNG(New_Dir)) > menu_len ? strlen(LNG(New_Dir)) : menu_len;
 	menu_len = strlen(LNG(Get_Size)) > menu_len ? strlen(LNG(Get_Size)) : menu_len;
 	menu_len = strlen(LNG(TextEditor)) > menu_len ? strlen(LNG(TextEditor)) : menu_len;
+	menu_len = strlen(LNG(Launch_With_Args)) > menu_len ? strlen(LNG(Launch_With_Args)) : menu_len;
 	menu_len = strlen(psu_action_label) > menu_len ? strlen(psu_action_label) : menu_len;
 	menu_len = strlen(LNG(time_manip)) > menu_len ? strlen(LNG(time_manip)) : menu_len;
 	menu_len = strlen(LNG(title_cfg)) > menu_len ? strlen(LNG(title_cfg)) : menu_len;
@@ -450,6 +451,7 @@ static int menu(const char *path, FILEINFO *file)
 		enable[TITLE_CFG] = FALSE;
 
 	enable[OPEN_TEXTEDITOR] = canOpenInTextEditor(path, file);
+	enable[LAUNCH_ELF_ARGS] = enable[OPEN_TEXTEDITOR];
 
 
 	if (write_disabled || menu_disabled) {
@@ -558,6 +560,8 @@ static int menu(const char *path, FILEINFO *file)
 					strcpy(tmp, LNG(Get_Size));
 				else if (i == OPEN_TEXTEDITOR)
 					strcpy(tmp, LNG(TextEditor));
+				else if (i == LAUNCH_ELF_ARGS)
+					strcpy(tmp, LNG(Launch_With_Args));
 				else if (i == TITLE_CFG)
 					strcpy(tmp, LNG(title_cfg));
 #ifdef TMANIP
@@ -1154,6 +1158,7 @@ int getFilePath(char *out, int cnfmode)
 						strcpy(ext, "*");
 					browser_cd = TRUE;
 				} else if ((!swapKeys && (new_pad & PAD_CROSS)) || (swapKeys && (new_pad & PAD_CIRCLE))) {  //Cancel command ?
+					LaunchArgsClear();
 					unmountAll();
 					return rv;
 				}
@@ -1413,14 +1418,26 @@ int getFilePath(char *out, int cnfmode)
 					else if (ret == OPEN_TEXTEDITOR) {
 						if (filerConfirmExploitModify(path, &files[browser_sel]) > 0) {
 							snprintf(tmp1, sizeof(tmp1), "%s%s", path, files[browser_sel].name);
-							TextEditor(tmp1);
+							ret = TextEditor(tmp1);
 							strcpy(cursorEntry, files[browser_sel].name);
 							browser_pushed = FALSE;
 							browser_repos = TRUE;
 							browser_cd = TRUE;
+							if (ret == TEXTEDITOR_RESULT_LAUNCH_ARGS)
+								snprintf(msg0, sizeof(msg0), LNG(Launch_Args_Loaded), LaunchArgsGetCount());
+							else
+								LaunchArgsClear();
 						} else
 							browser_pushed = FALSE;
 					}  //ends OPEN_TEXTEDITOR
+					else if (ret == LAUNCH_ELF_ARGS) {
+						snprintf(tmp1, sizeof(tmp1), "%s%s", path, files[browser_sel].name);
+						if (LaunchArgsLoadFromFile(tmp1, msg0, sizeof(msg0)) > 0) {
+							strcpy(cursorEntry, files[browser_sel].name);
+							browser_repos = TRUE;
+						}
+						browser_pushed = FALSE;
+					}  //ends LAUNCH_ELF_ARGS
 					else if (ret == GETSIZE) {
 						submenu_func_GetSize(msg0, path, files);
 					}  //ends GETSIZE
@@ -1477,6 +1494,7 @@ int getFilePath(char *out, int cnfmode)
 					}
 				}
 			} else if (new_pad & PAD_SELECT) {  //Leaving the browser ?
+				LaunchArgsClear();
 				unmountAll();
 				return rv;
 			}
@@ -1726,7 +1744,8 @@ int getFilePath(char *out, int cnfmode)
 									genCmpFileExt(files[top + i].name, "XML") ||
 									genCmpFileExt(files[top + i].name, "TOML") ||
 									genCmpFileExt(files[top + i].name, "YAML") ||
-									genCmpFileExt(files[top + i].name, "YML")
+									genCmpFileExt(files[top + i].name, "YML") ||
+									genCmpFileExt(files[top + i].name, "ARG")
 									)
 							iconcolr = COLOR_GRAPH4;
 						else
@@ -1837,6 +1856,8 @@ int getFilePath(char *out, int cnfmode)
 	}  //ends while
 
 	//Leaving the browser
+	if (rv <= 0)
+		LaunchArgsClear();
 	unmountAll();
 	return rv;
 }

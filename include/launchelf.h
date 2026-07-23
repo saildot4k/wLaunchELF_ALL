@@ -393,6 +393,13 @@ int loadAtaModules(void);
 int checkELFheader(char *filename);
 void RunLoaderElf(char *filename, char *party, const char *selected_path, int exec_kind, int reboot_iop_elf_load);
 void RunLoaderMemory(const char *arg0, const char *mem_arg, int reboot_iop);
+void LaunchArgsClear(void);
+int LaunchArgsPending(void);
+int LaunchArgsGetCount(void);
+int LaunchArgsLoadFromFile(const char *path, char *message, size_t message_size);
+int LaunchArgsLoadSidecarForExec(const char *exec_path, char *message, size_t message_size);
+int LaunchArgsLoadFromBuffer(const char *source, const char *buffer, int size, char *message, size_t message_size);
+int LaunchArgsCopyToArgv(char **argv, int max_args);
 #ifdef XFROM
 int PrepareMbrLaunchPayload(const char *path, char *mem_arg, size_t mem_arg_size);
 #endif
@@ -548,7 +555,12 @@ void DebugDisp(char *Message);
 void hddManager(void);
 
 /* editor.c */
-void TextEditor(char *path);
+enum {
+	TEXTEDITOR_RESULT_EXIT = 0,
+	TEXTEDITOR_RESULT_LAUNCH_ARGS = 1
+};
+
+int TextEditor(char *path);
 
 /* timer.c */
 extern u64 WaitTime;
