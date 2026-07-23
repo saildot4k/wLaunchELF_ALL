@@ -1,24 +1,26 @@
 # __wLaunchELF_R3Z__
 
-Based off of [wLE_ISR](https://github.com/israpps/wLaunchELF_ISR)
+wLaunchELF, formerly known as uLaunchELF, also known as wLE or uLE (abbreviated), is an open source file manager and executable launcher for the Playstation 2 console based off of the original LaunchELF. It contains many different features, including a text editor, hard drive manager, as well as network support, and much more.
 
-# Supported devices:
+## Supported devices:
 | Device | Description | Visibility |
 |---|---|---|
 | __mc:/__ | Memory Cards | Always |
 | __usb:/__ | Fat/exFAT (BDM) USB | Always |
-| __mmce:/__ | Multi Purpose Memory Card Emulator IE SD2PSX, PSxMemCard Gen2 or MemCard Pro 2. | Always |
-| __mx4sio:/__ | SD card interface over memory card port. | Always |
-| __hdd:/__ | APA formatted internal HDD | Hidden on deckard |
-| __ata:/__ | BDM hard drive, exFAT for now till more are supported | Hiddon on deckard |
+| __mmce:/__[^1] | Multi Purpose Memory Card Emulator IE SD2PSX, PSxMemCard Gen2 or MemCard Pro 2. | Always |
+| __mx4sio:/__[^1] | SD card interface over memory card port. | Always |
+| __hdd:/__[^2] | APA formatted internal HDD | Hidden on deckard |
+| __ata:/__[^2] | BDM hard drive, exFAT for now till more are supported | Hiddon on deckard |
 | __xfrom:/__ | PSX DESR-XXXX flash storage | Hidden on non-PSX |
 | __dvr_hdd0:/__ | PSX DESR-XXXX digital video recorder hdd partition/side | Hidden on non-PSX |
 | __cdfs:/__ | CD/DVD File System | Always |
 | __udpfs:/__ | Network interface used with [PCM720s UDPFSD Server](https://github.com/pcm720/udpfsd) | Always |
 
-Drivers are lazy loading for for maximum compatibility. MMCE and MX4SIO will incure an IOP reboot as the 2 are incompatible.
+Drivers load on demand for for maximum compatibility and initial boot speed.
 
-Dual HDD/ATA support is built in for future development.
+[^1]: MMCE and MX4SIO will incure an IOP reboot as the 2 are incompatible.
+
+[^2]: Dual HDD/ATA support is built in for future development.
 
 ## Features:
 - RetroGem Game ID for [PIXEL FX RetroGem](https://www.pixelfx.co/hdmi-retro-gem)
@@ -34,7 +36,7 @@ Dual HDD/ATA support is built in for future development.
 - Dual hdd support
 - multi-usb support
 - HDD Manager can inject APA partition headers from header files on `usb:`, `mmce0:`, `mmce1:`, or `udpfs:` for HDD-OSD icons/launch metadata
-- All drivers besides core lazy loading for faster boot and support of everything
+- All drivers besides core lazy loading for faster boot and support of all devices.
 - Create and Extract PSU options so user knows what will happen
 - Extra file extensions for Text Editor ShortCuts
 - Timestamp manipulation feature to fix the date of any memory card folder containing any icon-based exploit _(\*tuna)_
@@ -149,5 +151,3 @@ content_subtype = 0
 - `make all-ds34-on` builds a dedicated ELF with DS34 support.
 - `make all-ds34-variants` builds both variants in one run.
 
-# **original readme**
-wLaunchELF, formerly known as uLaunchELF, also known as wLE or uLE (abbreviated), is an open source file manager and executable launcher for the Playstation 2 console based off of the original LaunchELF. It contains many different features, including a text editor, hard drive manager, as well as network support, and much more.
