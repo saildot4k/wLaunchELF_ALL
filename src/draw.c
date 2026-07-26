@@ -3,6 +3,7 @@
 //--------------------------------------------------------------
 #include "launchelf.h"
 #include "draw_private.h"
+#include "main_title.h"
 
 GSGLOBAL *gsGlobal;
 GSTEXTURE TexIcon[2];
@@ -32,12 +33,20 @@ int Menu_tooltip_y;  //Menus may also use this row for tooltips
 void setScrTmp(const char *msg0, const char *msg1)
 {
 	int x, y;
+	int title_chars;
 	char temp_txt[64];
+	char menu_title[MAX_TEXT_LINE + 1];
 
 	x = SCREEN_MARGIN;
 	y = Menu_title_y;
-	printXY(setting->Menu_Title, x, y, setting->color[COLOR_TEXT], TRUE, 0);
 	sprintf(temp_txt, " \xff\x34 wLaunchELF %s \xff\x34", ULE_VERSION);
+	title_chars = (SCREEN_WIDTH - (SCREEN_MARGIN * 2) - (FONT_WIDTH * ((int)strlen(temp_txt) + 1))) / FONT_WIDTH;
+	if (title_chars < 0)
+		title_chars = 0;
+	if (title_chars > MAX_TEXT_LINE)
+		title_chars = MAX_TEXT_LINE;
+	menuTitleFormat(menu_title, title_chars + 1);
+	printXY(menu_title, x, y, setting->color[COLOR_TEXT], TRUE, 0);
 	printXY(temp_txt, SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH * strlen(temp_txt), y,
 	        setting->color[COLOR_FRAME], TRUE, 0);
 

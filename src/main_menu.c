@@ -3,6 +3,7 @@
 //--------------------------------------------------------------
 #include "launchelf.h"
 #include "main_menu.h"
+#include "main_title.h"
 
 //------------------------------
 static void setLaunchKeys(void)
@@ -39,6 +40,7 @@ void MainMenuState_BeginTimers(MainMenuState *state)
 	state->init_delay_start = Timer();
 	state->timeout = (setting->timeout + 1) * 1000;
 	state->timeout_start = Timer();
+	menuTitleUpdateAsync(1);
 }
 
 void MainMenuState_UpdateTimers(MainMenuState *state, int *event)
@@ -70,6 +72,9 @@ void MainMenuState_UpdateTimers(MainMenuState *state, int *event)
 		if ((state->timeout / 1000) != (state->prev_timeout / 1000))
 			*event |= 8;  //event |= visible timeout change
 	}
+
+	if (menuTitleUpdateAsync(0))
+		*event |= 8;  //event |= visible title token change
 }
 
 int drawMainMenuScreen(MainMenuState *state, const char *main_msg)
