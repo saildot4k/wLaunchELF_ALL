@@ -3,7 +3,6 @@
 //--------------------------------------------------------------
 #include "launchelf.h"
 #include "main_gameid.h"
-#include "main_history.h"
 
 enum POPSTARTER_RESULT {
 	POPSTARTER_OK = 1,
@@ -1287,11 +1286,6 @@ int LaunchPopstarterVcd(const char *path, char *message, size_t message_size)
 	                                       popstarter_party, sizeof(popstarter_party), &exec_kind);
 	if (ret < 0)
 		goto fail;
-
-	if (have_launch_gameid && isLikelyTitleID(launch_gameid)) {
-		updateOSDHistoryFile(launch_gameid);
-		applyXPARAM(launch_gameid);
-	}
 
 	if (setting != NULL) {
 		reboot_iop_elf_load = setting->reboot_iop_elf_load;
