@@ -4,6 +4,7 @@
 #include "launchelf.h"
 #include "config_private.h"
 #include "gui_colors.h"
+#include "init.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -352,6 +353,7 @@ void configEnsureSysconfDir(const char *path)
 	if (path == NULL)
 		return;
 	if (!strncmp(path, "mc0:/SYS-CONF/", 14) || !strncmp(path, "mc1:/SYS-CONF/", 14)) {
+		ensureMemoryCardPortAccessible(path[2] - '0');
 		mcSync(0, NULL, NULL);
 		mcMkDir(path[2] - '0', 0, "SYS-CONF");
 		mcSync(0, NULL, &ret);
