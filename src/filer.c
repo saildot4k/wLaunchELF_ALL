@@ -7,6 +7,7 @@
 #include "gui_sort.h"
 #include "filer_shared.h"
 #include "filer_internal.h"
+#include "init.h"
 #include "main_startup.h"
 
 #define MC_ATTR_norm_folder 0x8427  //Normal folder on PS2 MC
@@ -324,6 +325,8 @@ int readMC(const char *path, FILEINFO *info, int max)
 	port = path[2] - '0';
 	if (port < 0 || port > 1)
 		return 0;
+
+	ensureMemoryCardPortAccessible(port);
 
 	ret = waitMemoryCardReadyForBrowse(port);
 	if (mctype_PSx == 2)  //PS2 MC ?
@@ -657,7 +660,9 @@ int genFixPath(const char *inp_path, char *gen_path)
 	strcpy(gen_path, uLE_path);  //Assume no path patching needed
 	pathSep = strchr(uLE_path, '/');
 
-	if (!strncmp(uLE_path, "cdfs", 4)) {  //if using CD or DVD disc path
+	if (!strncmp(uLE_path, "mc1:", 4)) {
+		ensureMemoryCardPortAccessible(1);
+	} else if (!strncmp(uLE_path, "cdfs", 4)) {  //if using CD or DVD disc path
 		LCDVD_FLUSHCACHE();
 		LCDVD_DISKREADY(0);
 		//end of clause for using a CD or DVD path
