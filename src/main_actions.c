@@ -58,6 +58,12 @@ static const char *getLaunchArgsSidecarBasePath(const char *path, const char *fu
 	return path;
 }
 
+static void getTextEditorReturnPath(char *out)
+{
+	getFilePath(out, FALSE);
+	LastDir[0] = '\0';
+}
+
 static void executeBrowserSelection(char *selected_path, const MainExecuteContext *ctx)
 {
 	int editor_result;
@@ -74,7 +80,7 @@ static void executeBrowserSelection(char *selected_path, const MainExecuteContex
 			}
 			LaunchArgsClear();
 			if (editor_result == TEXTEDITOR_RESULT_BROWSE_DIR) {
-				getFilePath(selected_path, FALSE);
+				getTextEditorReturnPath(selected_path);
 				continue;
 			}
 		} else {
@@ -474,11 +480,15 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 		return;
 	} else if (!stricmp(path, setting->Misc_TextEditor)) {
 		t = TextEditor(NULL);
-		if (t == TEXTEDITOR_RESULT_LAUNCH_ARGS || t == TEXTEDITOR_RESULT_BROWSE_DIR) {
+		if (t == TEXTEDITOR_RESULT_LAUNCH_ARGS) {
 			tmp[0] = 0;
 			getFilePath(tmp, FALSE);
-			if (t == TEXTEDITOR_RESULT_LAUNCH_ARGS && !tmp[0])
+			if (!tmp[0])
 				LaunchArgsClear();
+			executeBrowserSelection(tmp, ctx);
+		} else if (t == TEXTEDITOR_RESULT_BROWSE_DIR) {
+			tmp[0] = 0;
+			getTextEditorReturnPath(tmp);
 			executeBrowserSelection(tmp, ctx);
 		}
 		return;
