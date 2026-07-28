@@ -557,7 +557,8 @@ void hddManager(void);
 /* editor.c */
 enum {
 	TEXTEDITOR_RESULT_EXIT = 0,
-	TEXTEDITOR_RESULT_LAUNCH_ARGS = 1
+	TEXTEDITOR_RESULT_LAUNCH_ARGS = 1,
+	TEXTEDITOR_RESULT_BROWSE_DIR = 2
 };
 
 int TextEditor(char *path);
