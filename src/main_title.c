@@ -7,6 +7,7 @@
 #define MENU_TITLE_PS2_RTC_BASE_OFFSET_MINUTES 540
 #define MENU_TITLE_CLOCK_POLL_MS 1000
 #define MENU_TITLE_TEMP_POLL_MS 5000
+#define MENU_TITLE_FORMAT "$TIME  $DATE  $TEMP"
 
 typedef struct
 {
@@ -49,12 +50,12 @@ static int hasToken(const char *text, const char *token)
 
 static int menuTitleUsesTime(void)
 {
-	return setting != NULL && hasToken(setting->Menu_Title, "$TIME");
+	return hasToken(MENU_TITLE_FORMAT, "$TIME");
 }
 
 static int menuTitleUsesDate(void)
 {
-	return setting != NULL && hasToken(setting->Menu_Title, "$DATE");
+	return hasToken(MENU_TITLE_FORMAT, "$DATE");
 }
 
 static int menuTitleUsesClock(void)
@@ -64,7 +65,7 @@ static int menuTitleUsesClock(void)
 
 static int menuTitleUsesTemp(void)
 {
-	return setting != NULL && hasToken(setting->Menu_Title, "$TEMP");
+	return hasToken(MENU_TITLE_FORMAT, "$TEMP");
 }
 
 static int menuTitleUsesDynamicTokens(void)
@@ -452,13 +453,11 @@ void menuTitleFormat(char *out, size_t out_size)
 		return;
 
 	out[0] = '\0';
-	if (setting == NULL || setting->Menu_Title[0] == '\0')
-		return;
 
 	if (menuTitleUsesDynamicTokens())
 		menuTitleUpdateAsync(menuTitleUsesClock() && !title_clock.initialized);
 
-	src = setting->Menu_Title;
+	src = MENU_TITLE_FORMAT;
 	while (*src != '\0') {
 		if (!strncmp(src, "$TIME", 5)) {
 			appendText(out, out_size, &out_pos,
@@ -475,5 +474,10 @@ void menuTitleFormat(char *out, size_t out_size)
 			appendChar(out, out_size, &out_pos, *src);
 			src++;
 		}
+	}
+
+	while (out_pos > 0 && out[out_pos - 1] == ' ') {
+		out_pos--;
+		out[out_pos] = '\0';
 	}
 }
