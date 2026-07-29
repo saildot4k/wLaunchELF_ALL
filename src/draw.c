@@ -47,21 +47,21 @@ static int getMenuTitleCharLimit(const char *version_text)
 static void drawMenuTitleLine(void)
 {
 	int x, y;
-	char temp_txt[64];
-	char menu_title[MAX_TEXT_LINE + 1];
+	char app_title[64];
+	char status_title[MAX_TEXT_LINE + 1];
 
 	if (setting == NULL)
 		return;
 
 	x = SCREEN_MARGIN;
 	y = Menu_title_y;
-	sprintf(temp_txt, " \xff\x34 wLaunchELF %s \xff\x34", ULE_VERSION);
+	sprintf(app_title, "\xff\x34 wLaunchELF %s \xff\x34", ULE_VERSION);
 
 	drawSprite(setting->color[COLOR_BACKGR], 0, Menu_title_y - 1, SCREEN_WIDTH, Menu_message_y - 1);
-	menuTitleFormat(menu_title, getMenuTitleCharLimit(temp_txt) + 1);
-	printXY(menu_title, x, y, setting->color[COLOR_TEXT], TRUE, 0);
-	printXY(temp_txt, SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH * strlen(temp_txt), y,
-	        setting->color[COLOR_FRAME], TRUE, 0);
+	printXY(app_title, x, y, setting->color[COLOR_FRAME], TRUE, 0);
+	menuTitleFormat(status_title, getMenuTitleCharLimit(app_title) + 1);
+	printXY(status_title, SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH * strlen(status_title), y,
+	        setting->color[COLOR_TEXT], TRUE, 0);
 }
 //--------------------------------------------------------------
 static void updateDynamicMenuTitleLine(void)

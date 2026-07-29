@@ -185,7 +185,6 @@ enum {
 	MAX_PATH = 1025,
 	MAX_ENTRY = 2048,
 	MAX_PARTITIONS = 1400,
-	MAX_MENU_TITLE = 40,
 	MAX_ELF_TITLE = 72,
 	MAX_TEXT_LINE = 80
 };
@@ -282,7 +281,6 @@ typedef struct
 	char Misc_Reboot_IOP[64];
 	char usbkbd_file[MAX_PATH];
 	char kbdmap_file[MAX_PATH];
-	char Menu_Title[MAX_MENU_TITLE + 1];
 	char lang_file[MAX_PATH];
 	char font_file[MAX_PATH];
 	char popstarter_file[MAX_PATH];
