@@ -11,6 +11,7 @@ DVRP ?= 1
 IOP_RESET ?= 1
 XFROM ?= 1
 DFFS ?= 1
+DFFS_LOAD_RECOVERED ?= 1
 UDPTTY ?= 0
 MX4SIO ?= 1
 SIO2MAN ?= 1
@@ -113,7 +114,10 @@ endif
 ifeq ($(DFFS),1)
     HAS_DFFS = -DFFS
     EE_CFLAGS += -DDFFS
-    EE_OBJS += ccdriver_irx.o dffs_irx.o
+    ifeq ($(DFFS_LOAD_RECOVERED),1)
+        EE_CFLAGS += -DDFFS_LOAD_RECOVERED
+        EE_OBJS += ccmodman_irx.o ccdriver_irx.o dffs_irx.o
+    endif
 endif
 
 ifeq ($(DS34),1)
@@ -304,6 +308,7 @@ info:
 	$(info   MX4SIO		support for SDCard connected to memory card slot 2)
 	$(info   MMCE		support for direct SDCard access on SD2PSX or memcardpro2)
 	$(info   DFFS		include Crystal Chip dffs:/ DataFlash support)
+	$(info   DFFS_LOAD_RECOVERED	load recovered BootManager DFFS modules)
 	$(info ----------)
 	$(info   IOPTRAP		load exception handler module to IOP)
 	$(info   UDPTTY		transfer stdout to UDP broadcast)
@@ -375,7 +380,7 @@ info2:
 	$(info EE_BIN_PKD = $(EE_BIN_PKD))
 	$(info EE_OBJS = $(EE_OBJS))
 	$(info TMANIP=$(TMANIP), SIO_DEBUG=$(SIO_DEBUG), DS34=$(DS34), ETH=$(ETH), UDPFS=$(UDPFS))
-	$(info EXFAT=$(EXFAT), XFROM=$(XFROM), DFFS=$(DFFS), UDPTTY=$(UDPTTY), MX4SIO=$(MX4SIO))
+	$(info EXFAT=$(EXFAT), XFROM=$(XFROM), DFFS=$(DFFS), DFFS_LOAD_RECOVERED=$(DFFS_LOAD_RECOVERED), UDPTTY=$(UDPTTY), MX4SIO=$(MX4SIO))
 	$(info MMCE=$(MMCE), IOP_RESET=$(IOP_RESET))
 
 #special recipe for compiling and dumping obj to subfolder

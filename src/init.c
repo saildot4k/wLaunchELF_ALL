@@ -69,7 +69,8 @@ IMPORT_BIN2C(dvrfile_irx);
 IMPORT_BIN2C(mmceman_irx);
 #endif
 
-#ifdef DFFS
+#ifdef DFFS_LOAD_RECOVERED
+IMPORT_BIN2C(ccmodman_irx);
 IMPORT_BIN2C(ccdriver_irx);
 IMPORT_BIN2C(dffs_irx);
 #endif
@@ -144,7 +145,10 @@ static u8 have_Flash_modules = 0;
 static u8 xfromserv_loaded = 0;
 #endif
 #ifdef DFFS
+#ifdef DFFS_LOAD_RECOVERED
+static u8 have_ccmodman = 0;
 static u8 have_ccdriver = 0;
+#endif
 static u8 have_DFFS_modules = 0;
 #endif
 static u8 have_secrsif = 0;
@@ -691,27 +695,52 @@ static int dffsDeviceRegistered(void)
 //---------------------------------------------------------------------------
 int loadDffsModules(void)
 {
+#ifdef DFFS_LOAD_RECOVERED
 	int ret, id __attribute__((unused));
+#endif
 
 	// DataFlashFS may format Crystal Chip flash if no valid volume is found.
 	// Keep this lazy and call it only after the user selects a dffs: path.
 	ensureCoreIoStackReady();
 	if (dffsDeviceRegistered()) {
+#ifdef DFFS_LOAD_RECOVERED
+		have_ccmodman = 1;
 		have_ccdriver = 1;
+#endif
 		have_DFFS_modules = 1;
 		return 1;
 	}
 
-	if (!have_ccdriver || !have_DFFS_modules)
-		showLoadingModulesMsg("dffs");
+#ifdef DFFS_LOAD_RECOVERED
+	if (!have_ccmodman) {
+		showLoadingModulesMsg("dffs modman");
+		id = SifExecModuleBuffer(ccmodman_irx, size_ccmodman_irx, 0, NULL, &ret);
+		DPRINTF(" [CCMODMAN]: id=%d ret=%d\n", id, ret);
+		have_ccmodman = (id >= 0 && ret >= 0);
+		if (!have_ccmodman)
+			return dffsDeviceRegistered();
+		if (dffsDeviceRegistered()) {
+			have_ccdriver = 1;
+			have_DFFS_modules = 1;
+			return 1;
+		}
+	}
 
 	if (!have_ccdriver) {
+		showLoadingModulesMsg("dffs ccdriver");
 		id = SifExecModuleBuffer(ccdriver_irx, size_ccdriver_irx, 0, NULL, &ret);
 		DPRINTF(" [CCDRIVER]: id=%d ret=%d\n", id, ret);
 		have_ccdriver = (id >= 0 && ret >= 0);
+		if (!have_ccdriver)
+			return dffsDeviceRegistered();
+		if (dffsDeviceRegistered()) {
+			have_DFFS_modules = 1;
+			return 1;
+		}
 	}
 
 	if (!have_DFFS_modules) {
+		showLoadingModulesMsg("dffs fs");
 		id = SifExecModuleBuffer(dffs_irx, size_dffs_irx, 0, NULL, &ret);
 		DPRINTF(" [DFFS]: id=%d ret=%d\n", id, ret);
 		have_DFFS_modules = (id >= 0 && ret >= 0);
@@ -720,6 +749,9 @@ int loadDffsModules(void)
 	}
 
 	return have_DFFS_modules;
+#else
+	return 0;
+#endif
 }
 //------------------------------
 //endfunc loadDffsModules
@@ -1983,7 +2015,10 @@ static void clearIopModuleState(void)
 	xfromserv_loaded = 0;
 #endif
 #ifdef DFFS
+#ifdef DFFS_LOAD_RECOVERED
+	have_ccmodman = 0;
 	have_ccdriver = 0;
+#endif
 	have_DFFS_modules = 0;
 #endif
 	have_secrsif = 0;

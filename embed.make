@@ -30,6 +30,7 @@ endif
 EXTFLASH_SOURCE = iop/__precompiled/extflash.irx
 XFROMMAN_SOURCE = iop/__precompiled/xfromman.irx
 XFORMSERV_SOURCE = $(PS2SDK)/iop/irx/xfromserv.irx
+CCMODMAN_SOURCE = iop/__precompiled/ccmodman.irx
 CCDRIVER_SOURCE = iop/__precompiled/ccdriver.irx
 DFFS_SOURCE = iop/__precompiled/dffs.irx
 SECRSIF_SOURCE = $(PS2SDK)/iop/irx/secrsif.irx
@@ -57,11 +58,16 @@ ifeq ($(XFROM),1)
   endif
 endif
 ifeq ($(DFFS),1)
-  ifeq ($(wildcard $(CCDRIVER_SOURCE)),)
-    $(error Missing ccdriver.irx. Extract it to iop/__precompiled/ccdriver.irx or build with DFFS=0)
-  endif
-  ifeq ($(wildcard $(DFFS_SOURCE)),)
-    $(error Missing dffs.irx. Extract it to iop/__precompiled/dffs.irx or build with DFFS=0)
+  ifeq ($(DFFS_LOAD_RECOVERED),1)
+    ifeq ($(wildcard $(CCMODMAN_SOURCE)),)
+      $(error Missing ccmodman.irx. Extract it to iop/__precompiled/ccmodman.irx or build with DFFS_LOAD_RECOVERED=0)
+    endif
+    ifeq ($(wildcard $(CCDRIVER_SOURCE)),)
+      $(error Missing ccdriver.irx. Extract it to iop/__precompiled/ccdriver.irx or build with DFFS_LOAD_RECOVERED=0)
+    endif
+    ifeq ($(wildcard $(DFFS_SOURCE)),)
+      $(error Missing dffs.irx. Extract it to iop/__precompiled/dffs.irx or build with DFFS_LOAD_RECOVERED=0)
+    endif
   endif
 endif
 
@@ -392,6 +398,9 @@ $(EE_ASM_DIR)xfromman_irx.s: $(XFROMMAN_SOURCE) | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)xfromserv_irx.s: $(XFORMSERV_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ xfromserv_irx
+
+$(EE_ASM_DIR)ccmodman_irx.s: $(CCMODMAN_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ ccmodman_irx
 
 $(EE_ASM_DIR)ccdriver_irx.s: $(CCDRIVER_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ ccdriver_irx
