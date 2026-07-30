@@ -3,6 +3,8 @@
 These notes summarize the `dffs:/` driver recovered from
 `BM2UNPACKED.ELF` from Crystal Chip BootManager. The analyzed unpacked ELF has
 SHA-256 `38ab7ede9d519156ebda08ec3178886d399b8657a394bc9e17f4069a2efaefe1`.
+For reverse-engineering notes on the recovered IRX modules, see
+[`cc-dffs-driver-analysis.md`](cc-dffs-driver-analysis.md).
 
 ## Recovered Modules
 
