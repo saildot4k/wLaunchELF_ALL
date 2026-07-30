@@ -59,11 +59,15 @@ ifeq ($(XFROM),1)
 endif
 ifeq ($(DFFS),1)
   ifeq ($(DFFS_LOAD_RECOVERED),1)
-    ifeq ($(wildcard $(CCMODMAN_SOURCE)),)
-      $(error Missing ccmodman.irx. Extract it to iop/__precompiled/ccmodman.irx or build with DFFS_LOAD_RECOVERED=0)
+    ifeq ($(DFFS_LOAD_CCMODMAN),1)
+      ifeq ($(wildcard $(CCMODMAN_SOURCE)),)
+        $(error Missing ccmodman.irx. Extract it to iop/__precompiled/ccmodman.irx or build with DFFS_LOAD_CCMODMAN=0)
+      endif
     endif
-    ifeq ($(wildcard $(CCDRIVER_SOURCE)),)
-      $(error Missing ccdriver.irx. Extract it to iop/__precompiled/ccdriver.irx or build with DFFS_LOAD_RECOVERED=0)
+    ifeq ($(DFFS_LOAD_CCDRIVER),1)
+      ifeq ($(wildcard $(CCDRIVER_SOURCE)),)
+        $(error Missing ccdriver.irx. Extract it to iop/__precompiled/ccdriver.irx or build with DFFS_LOAD_CCDRIVER=0)
+      endif
     endif
     ifeq ($(wildcard $(DFFS_SOURCE)),)
       $(error Missing dffs.irx. Extract it to iop/__precompiled/dffs.irx or build with DFFS_LOAD_RECOVERED=0)

@@ -89,11 +89,19 @@ to suppress this format path.
 `DFFS_LOAD_RECOVERED=1`, wLaunchELF_R3Z embeds and attempts the recovered
 BootManager module order: `ccmodman.irx`, `ccdriver.irx`, then `dffs.irx`.
 The loading screen identifies those stages as `dffs modman`, `dffs ccdriver`,
-and `dffs fs` so non-debug hardware tests can report which module stalls.
+and `dffs fs` so non-debug hardware tests can report which module stalls. A
+Crystal Chip hardware test reached `dffs ccdriver` and then hung, which means
+the recovered `modman` entry returned but the recovered `ccdriver` module start
+did not.
 
-Build `DFFS_LOAD_RECOVERED=0 IOP_RESET=0` to test the alternate path where
-BootManager has already left DFFS resident and wLaunchELF_R3Z should only probe
-and use the existing `dffs:` device without starting recovered modules itself.
+The load sequence is configurable for hardware experiments:
+
+| Build flags | Driver load behavior | Purpose |
+|---|---|---|
+| `DFFS_LOAD_RECOVERED=1` | Load `ccmodman`, `ccdriver`, then `dffs` | Full recovered BootManager-like sequence |
+| `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCDRIVER=0` | Load `ccmodman`, then `dffs` | Test whether `modman` or firmware already supplies `ccdriver` |
+| `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=0` | Load only `dffs` after preserving the current IOP | Test whether BootManager left `ccdriver` resident |
+| `DFFS_LOAD_RECOVERED=0 IOP_RESET=0` | Do not start recovered DFFS modules; only probe existing `dffs:` | Test whether BootManager left the whole DFFS stack resident |
 
 Access uses the existing generic `fileXio` operations for directory listing,
 file open/read/write, mkdir, remove, rename, and recursive copy. The generic

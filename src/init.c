@@ -69,9 +69,13 @@ IMPORT_BIN2C(dvrfile_irx);
 IMPORT_BIN2C(mmceman_irx);
 #endif
 
-#ifdef DFFS_LOAD_RECOVERED
+#ifdef DFFS_LOAD_CCMODMAN
 IMPORT_BIN2C(ccmodman_irx);
+#endif
+#ifdef DFFS_LOAD_CCDRIVER
 IMPORT_BIN2C(ccdriver_irx);
+#endif
+#ifdef DFFS_LOAD_RECOVERED
 IMPORT_BIN2C(dffs_irx);
 #endif
 
@@ -145,8 +149,10 @@ static u8 have_Flash_modules = 0;
 static u8 xfromserv_loaded = 0;
 #endif
 #ifdef DFFS
-#ifdef DFFS_LOAD_RECOVERED
+#ifdef DFFS_LOAD_CCMODMAN
 static u8 have_ccmodman = 0;
+#endif
+#ifdef DFFS_LOAD_CCDRIVER
 static u8 have_ccdriver = 0;
 #endif
 static u8 have_DFFS_modules = 0;
@@ -703,8 +709,10 @@ int loadDffsModules(void)
 	// Keep this lazy and call it only after the user selects a dffs: path.
 	ensureCoreIoStackReady();
 	if (dffsDeviceRegistered()) {
-#ifdef DFFS_LOAD_RECOVERED
+#ifdef DFFS_LOAD_CCMODMAN
 		have_ccmodman = 1;
+#endif
+#ifdef DFFS_LOAD_CCDRIVER
 		have_ccdriver = 1;
 #endif
 		have_DFFS_modules = 1;
@@ -712,6 +720,7 @@ int loadDffsModules(void)
 	}
 
 #ifdef DFFS_LOAD_RECOVERED
+#ifdef DFFS_LOAD_CCMODMAN
 	if (!have_ccmodman) {
 		showLoadingModulesMsg("dffs modman");
 		id = SifExecModuleBuffer(ccmodman_irx, size_ccmodman_irx, 0, NULL, &ret);
@@ -720,12 +729,16 @@ int loadDffsModules(void)
 		if (!have_ccmodman)
 			return dffsDeviceRegistered();
 		if (dffsDeviceRegistered()) {
+#ifdef DFFS_LOAD_CCDRIVER
 			have_ccdriver = 1;
+#endif
 			have_DFFS_modules = 1;
 			return 1;
 		}
 	}
+#endif
 
+#ifdef DFFS_LOAD_CCDRIVER
 	if (!have_ccdriver) {
 		showLoadingModulesMsg("dffs ccdriver");
 		id = SifExecModuleBuffer(ccdriver_irx, size_ccdriver_irx, 0, NULL, &ret);
@@ -738,6 +751,7 @@ int loadDffsModules(void)
 			return 1;
 		}
 	}
+#endif
 
 	if (!have_DFFS_modules) {
 		showLoadingModulesMsg("dffs fs");
@@ -2015,8 +2029,10 @@ static void clearIopModuleState(void)
 	xfromserv_loaded = 0;
 #endif
 #ifdef DFFS
-#ifdef DFFS_LOAD_RECOVERED
+#ifdef DFFS_LOAD_CCMODMAN
 	have_ccmodman = 0;
+#endif
+#ifdef DFFS_LOAD_CCDRIVER
 	have_ccdriver = 0;
 #endif
 	have_DFFS_modules = 0;
