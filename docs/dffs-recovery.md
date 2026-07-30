@@ -96,6 +96,16 @@ did not.
 
 The load sequence is configurable for hardware experiments:
 
+| GitHub Actions `dffs_mode` | Driver load behavior | Purpose |
+|---|---|---|
+| `Full recovered stack - ccmodman, ccdriver, dffs` | Load `ccmodman`, `ccdriver`, then `dffs` | Full recovered BootManager-like sequence |
+| `Skip ccdriver - ccmodman, dffs` | Load `ccmodman`, then `dffs` | Test whether `modman` or firmware already supplies `ccdriver` |
+| `DataFlashFS only - preserve IOP, load dffs` | Do not reset IOP; load only `dffs` | Test whether BootManager left `ccdriver` resident |
+| `Probe only - preserve IOP, load nothing` | Do not reset IOP or start recovered DFFS modules; only probe existing `dffs:` | Test whether BootManager left the whole DFFS stack resident |
+| `DFFS disabled` | Build without `dffs:/` support | Disable DFFS integration |
+
+Equivalent make flags:
+
 | Build flags | Driver load behavior | Purpose |
 |---|---|---|
 | `DFFS_LOAD_RECOVERED=1` | Load `ccmodman`, `ccdriver`, then `dffs` | Full recovered BootManager-like sequence |

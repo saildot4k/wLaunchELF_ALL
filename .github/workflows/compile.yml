@@ -5,41 +5,16 @@ on:
     inputs:
       make_args:
         description: pass extra make argumments to control features not explicitly handled by CI
-      dffs:
-        description: include Crystal Chip dffs:/ DataFlash support
+      dffs_mode:
+        description: Crystal Chip dffs:/ test mode
         type: choice
-        default: "1"
+        default: "Full recovered stack - ccmodman, ccdriver, dffs"
         options:
-          - "1"
-          - "0"
-      dffs_load_recovered:
-        description: load recovered BootManager DFFS modules
-        type: choice
-        default: "1"
-        options:
-          - "1"
-          - "0"
-      dffs_load_ccmodman:
-        description: load recovered Crystal Chip modman before DFFS
-        type: choice
-        default: "1"
-        options:
-          - "1"
-          - "0"
-      dffs_load_ccdriver:
-        description: load recovered Crystal Chip low-level driver before DFFS
-        type: choice
-        default: "1"
-        options:
-          - "1"
-          - "0"
-      iop_reset:
-        description: reset IOP during startup
-        type: choice
-        default: "1"
-        options:
-          - "1"
-          - "0"
+          - "Full recovered stack - ccmodman, ccdriver, dffs"
+          - "Skip ccdriver - ccmodman, dffs"
+          - "DataFlashFS only - preserve IOP, load dffs"
+          - "Probe only - preserve IOP, load nothing"
+          - "DFFS disabled"
   push:
   repository_dispatch:
     types: [run_build]
@@ -118,7 +93,27 @@ jobs:
           "${{ matrix.pad_profile }}" \
           "${{ matrix.storage_profile }}" \
           0 0)"
-        DFFS_FLAGS="DFFS=${{ github.event.inputs.dffs || '1' }} DFFS_LOAD_RECOVERED=${{ github.event.inputs.dffs_load_recovered || '1' }} DFFS_LOAD_CCMODMAN=${{ github.event.inputs.dffs_load_ccmodman || '1' }} DFFS_LOAD_CCDRIVER=${{ github.event.inputs.dffs_load_ccdriver || '1' }} IOP_RESET=${{ github.event.inputs.iop_reset || '1' }}"
+        case "${{ github.event.inputs.dffs_mode || 'Full recovered stack - ccmodman, ccdriver, dffs' }}" in
+          "Full recovered stack - ccmodman, ccdriver, dffs")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=1 DFFS_LOAD_CCDRIVER=1 IOP_RESET=1"
+            ;;
+          "Skip ccdriver - ccmodman, dffs")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=1 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
+            ;;
+          "DataFlashFS only - preserve IOP, load dffs")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=0"
+            ;;
+          "Probe only - preserve IOP, load nothing")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=0 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=0"
+            ;;
+          "DFFS disabled")
+            DFFS_FLAGS="DFFS=0 DFFS_LOAD_RECOVERED=0 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
+            ;;
+          *)
+            echo "Unknown dffs_mode: ${{ github.event.inputs.dffs_mode }}" >&2
+            exit 1
+            ;;
+        esac
         echo "Resolved make flags: $FLAGS"
         echo "DFFS make flags: $DFFS_FLAGS"
         make rebuild $FLAGS $DFFS_FLAGS ${{ github.event.inputs.make_args }}
