@@ -21,6 +21,7 @@ static int isBootUsbMassPath(const char *path);
 static int isBootAtaPath(const char *path);
 static int isBootHddPath(const char *path);
 static int isBootXfromPath(const char *path);
+static int isBootDffsPath(const char *path);
 static void initializeBootExecPath(void);
 static void buildBootBlockPath(char *dst, size_t dst_size, const char *prefix, const char *partition, const char *path_part);
 static int getRomverPrefixNumber(void);
@@ -327,7 +328,7 @@ static int isSlashRootedBootPathDevice(const char *path)
 	if (isBootHddPath(path))
 		return 0;
 
-	if (isBootUsbMassPath(path) || isBootAtaPath(path) || isBootXfromPath(path))
+	if (isBootUsbMassPath(path) || isBootAtaPath(path) || isBootXfromPath(path) || isBootDffsPath(path))
 		return 1;
 	if (!strncmp(path, "mc", 2) && path[2] >= '0' && path[2] <= '9' && path[3] == ':')
 		return 1;
@@ -398,6 +399,13 @@ static int isBootXfromPath(const char *path)
 }
 //------------------------------
 //endfunc isBootXfromPath
+//---------------------------------------------------------------------------
+static int isBootDffsPath(const char *path)
+{
+	return isDffsPath(path);
+}
+//------------------------------
+//endfunc isBootDffsPath
 //---------------------------------------------------------------------------
 static void buildBootBlockPath(char *dst, size_t dst_size, const char *prefix, const char *partition, const char *path_part)
 {
@@ -480,6 +488,10 @@ enum BOOT_DEVICE prepareBootDeviceAndPath(const char *arg0, char *boot_path, siz
 #ifdef XFROM
 		} else if (console_is_PSX && isBootXfromPath(LaunchElfDir)) {
 			boot = BOOT_DEVICE_XFROM;
+#endif
+#ifdef DFFS
+		} else if (isBootDffsPath(LaunchElfDir)) {
+			boot = BOOT_DEVICE_DFFS;
 #endif
 #ifdef MMCE
 		} else if (!strncmp(LaunchElfDir, "mmce", 4)) {
@@ -574,6 +586,11 @@ void bringUpBootDeviceStack(enum BOOT_DEVICE boot_device)
 		case BOOT_DEVICE_XFROM:
 #ifdef XFROM
 			loadFlashModules();
+#endif
+			break;
+		case BOOT_DEVICE_DFFS:
+#ifdef DFFS
+			loadDffsModules();
 #endif
 			break;
 		case BOOT_DEVICE_UDPFS:

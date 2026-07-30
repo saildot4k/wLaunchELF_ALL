@@ -725,6 +725,11 @@ int genFixPath(const char *inp_path, char *gen_path)
 	} else if (!strncmp(uLE_path, "mmce", 4)) {
 		loadMmceModules();
 #endif
+#ifdef DFFS
+	} else if (isDffsPath(uLE_path)) {
+		if (!loadDffsModules())
+			part_ix = -1;
+#endif
 	} else if (getHddDeviceFromPath(uLE_path, hdd_device) >= 0 && uLE_path[5] == '/') {  //If using HDD path
 		hdd_unit = getHddUnitFromDevice(hdd_device);
 		if (hdd_unit < 0) {
@@ -1467,6 +1472,13 @@ int getDir(const char *path, FILEINFO *info)
 	else if (!strncmp(path, "xfrom", 5))
 		n = readXFROM(path, info, max);
 #endif
+#ifdef DFFS
+	else if (isDffsPath(path)) {
+		if (!loadDffsModules())
+			return 0;
+		n = readGENERICWithFirstOpenRetry(path, info, max, 750);
+	}
+#endif
 	else if (!strncmp(path, "hdd", 3))
 		n = readHDD(path, info, max);
 #ifdef DVRP
@@ -1781,6 +1793,11 @@ int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 				strcpy(files[nfiles].name, "xfrom0:");
 				files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
 			}
+#endif
+
+#ifdef DFFS
+			strcpy(files[nfiles].name, "dffs:");
+			files[nfiles++].stats.AttrFile = sceMcFileAttrSubdir;
 #endif
 
 #ifdef DVRP

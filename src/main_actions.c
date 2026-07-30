@@ -208,6 +208,15 @@ Recurse_for_ESR:  //Recurse here for PS2Disc command with ESR disc
 #else
 		goto ELFnotFound;
 #endif
+	} else if (isDffsPath(path)) {
+#ifdef DFFS
+		if (!loadDffsModules())
+			goto ELFnotFound;
+		party[0] = 0;
+		goto CheckELF_path;
+#else
+		goto ELFnotFound;
+#endif
 	} else if (!strncmp(path, "mx4sio", 6)) {
 #ifdef MX4SIO
 		if (!mx4sio_driver_running && !loadMx4sioModules())

@@ -431,6 +431,10 @@ int checkELFheader(char *path)
 	if (!strncmp(fullpath, "mmce", 4))
 		loadMmceModules();
 #endif
+#ifdef DFFS
+	if (isDffsPath(fullpath))
+		loadDffsModules();
+#endif
 #ifdef MX4SIO
 	if (!strncmp(fullpath, "mx4sio", 6) && !mx4sio_driver_running && !loadMx4sioModules())
 		goto error;

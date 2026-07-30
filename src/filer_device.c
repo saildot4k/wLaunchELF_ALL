@@ -59,6 +59,10 @@ int ensurePathDeviceStackReady(const char *path)
 	if (!strncmp(path, "xfrom", 5))
 		return loadFlashModules();
 #endif
+#ifdef DFFS
+	if (isDffsPath(path))
+		return loadDffsModules();
+#endif
 	if (!strncmp(path, "mass", 4) || !strncmp(path, "usb", 3)) {
 		loadUsbModules();
 		return (USB_mass_loaded != 0);

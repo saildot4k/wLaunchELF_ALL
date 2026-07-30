@@ -30,6 +30,8 @@ endif
 EXTFLASH_SOURCE = iop/__precompiled/extflash.irx
 XFROMMAN_SOURCE = iop/__precompiled/xfromman.irx
 XFORMSERV_SOURCE = $(PS2SDK)/iop/irx/xfromserv.irx
+CCDRIVER_SOURCE = iop/__precompiled/ccdriver.irx
+DFFS_SOURCE = iop/__precompiled/dffs.irx
 SECRSIF_SOURCE = $(PS2SDK)/iop/irx/secrsif.irx
 EXPLOIT_IOPRP_SOURCE := exploits/IOPRP_LTS.IMG
 ifeq ($(wildcard $(SECRSIF_SOURCE)),)
@@ -52,6 +54,14 @@ ifeq ($(XFROM),1)
   endif
   ifeq ($(wildcard $(XFORMSERV_SOURCE)),)
     $(error Missing xfromserv.irx. Update PS2SDK/toolchain container for XFROM support)
+  endif
+endif
+ifeq ($(DFFS),1)
+  ifeq ($(wildcard $(CCDRIVER_SOURCE)),)
+    $(error Missing ccdriver.irx. Extract it to iop/__precompiled/ccdriver.irx or build with DFFS=0)
+  endif
+  ifeq ($(wildcard $(DFFS_SOURCE)),)
+    $(error Missing dffs.irx. Extract it to iop/__precompiled/dffs.irx or build with DFFS=0)
   endif
 endif
 
@@ -382,6 +392,12 @@ $(EE_ASM_DIR)xfromman_irx.s: $(XFROMMAN_SOURCE) | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)xfromserv_irx.s: $(XFORMSERV_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ xfromserv_irx
+
+$(EE_ASM_DIR)ccdriver_irx.s: $(CCDRIVER_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ ccdriver_irx
+
+$(EE_ASM_DIR)dffs_irx.s: $(DFFS_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ dffs_irx
 
 $(EE_ASM_DIR)secrsif_irx.s: $(SECRSIF_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ secrsif_irx

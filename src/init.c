@@ -69,6 +69,11 @@ IMPORT_BIN2C(dvrfile_irx);
 IMPORT_BIN2C(mmceman_irx);
 #endif
 
+#ifdef DFFS
+IMPORT_BIN2C(ccdriver_irx);
+IMPORT_BIN2C(dffs_irx);
+#endif
+
 // Mandatory IRX
 IMPORT_BIN2C(iomanx_irx);
 IMPORT_BIN2C(filexio_irx);
@@ -137,6 +142,10 @@ static u8 have_ata_bd = 0;
 #ifdef XFROM
 static u8 have_Flash_modules = 0;
 static u8 xfromserv_loaded = 0;
+#endif
+#ifdef DFFS
+static u8 have_ccdriver = 0;
+static u8 have_DFFS_modules = 0;
 #endif
 static u8 have_secrsif = 0;
 static u8 have_exploit_signer_iop = 0;
@@ -651,6 +660,69 @@ static void load_pflash(void)
 }
 //------------------------------
 //endfunc load_pflash
+//---------------------------------------------------------------------------
+#endif
+int isDffsPath(const char *path)
+{
+	if (path == NULL || strncmp(path, "dffs", 4))
+		return 0;
+
+	return (path[4] == '\0' || path[4] == ':' || path[4] == '/' || path[4] == '\\');
+}
+//------------------------------
+//endfunc isDffsPath
+//---------------------------------------------------------------------------
+#ifdef DFFS
+static int dffsDeviceRegistered(void)
+{
+	int fd;
+
+	fd = fileXioDopen("dffs:/");
+	if (fd < 0)
+		fd = fileXioDopen("dffs:");
+	if (fd < 0)
+		return 0;
+
+	fileXioDclose(fd);
+	return 1;
+}
+//------------------------------
+//endfunc dffsDeviceRegistered
+//---------------------------------------------------------------------------
+int loadDffsModules(void)
+{
+	int ret, id __attribute__((unused));
+
+	// DataFlashFS may format Crystal Chip flash if no valid volume is found.
+	// Keep this lazy and call it only after the user selects a dffs: path.
+	ensureCoreIoStackReady();
+	if (dffsDeviceRegistered()) {
+		have_ccdriver = 1;
+		have_DFFS_modules = 1;
+		return 1;
+	}
+
+	if (!have_ccdriver || !have_DFFS_modules)
+		showLoadingModulesMsg("dffs");
+
+	if (!have_ccdriver) {
+		id = SifExecModuleBuffer(ccdriver_irx, size_ccdriver_irx, 0, NULL, &ret);
+		DPRINTF(" [CCDRIVER]: id=%d ret=%d\n", id, ret);
+		have_ccdriver = (id >= 0 && ret >= 0);
+	}
+
+	if (!have_DFFS_modules) {
+		id = SifExecModuleBuffer(dffs_irx, size_dffs_irx, 0, NULL, &ret);
+		DPRINTF(" [DFFS]: id=%d ret=%d\n", id, ret);
+		have_DFFS_modules = (id >= 0 && ret >= 0);
+		if (!have_DFFS_modules && dffsDeviceRegistered())
+			have_DFFS_modules = 1;
+	}
+
+	return have_DFFS_modules;
+}
+//------------------------------
+//endfunc loadDffsModules
 //---------------------------------------------------------------------------
 #endif
 #ifdef ETH
@@ -1909,6 +1981,10 @@ static void clearIopModuleState(void)
 #ifdef XFROM
 	have_Flash_modules = 0;
 	xfromserv_loaded = 0;
+#endif
+#ifdef DFFS
+	have_ccdriver = 0;
+	have_DFFS_modules = 0;
 #endif
 	have_secrsif = 0;
 	have_exploit_signer_iop = 0;

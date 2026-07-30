@@ -12,6 +12,7 @@ wLaunchELF, formerly known as uLaunchELF, also known as wLE or uLE (abbreviated)
 | __hdd:/__[^2] | APA formatted internal HDD | Hidden on deckard |
 | __ata:/__[^2] | BDM hard drive, exFAT for now till more are supported | Hiddon on deckard |
 | __xfrom:/__ | PSX DESR-XXXX flash storage | Hidden on non-PSX |
+| __dffs:/__[^3] | Crystal Chip DataFlashFS storage | Built with DFFS; useful on Crystal Chip 2.0 |
 | __dvr_hdd0:/__ | PSX DESR-XXXX digital video recorder hdd partition/side | Hidden on non-PSX |
 | __cdfs:/__ | CD/DVD File System | Always |
 | __udpfs:/__ | Network interface used with [PCM720s UDPFSD Server](https://github.com/pcm720/udpfsd) | Always |
@@ -21,6 +22,8 @@ Drivers load on demand for maximum compatibility and initial boot speed.
 [^1]: MMCE and MX4SIO will incure an IOP reboot as the 2 are incompatible.
 
 [^2]: Dual HDD/ATA support is built in for future development.
+
+[^3]: DFFS is the Crystal Chip flash filesystem recovered from BootManager. Its driver is FAT16-like and may format the flash if no valid DFFS volume is found.
 
 ## Features:
 - LoadBOOTer MC Exploit installer, supports Retail PS2/PSX and DEX(DTL-HXXXXX)

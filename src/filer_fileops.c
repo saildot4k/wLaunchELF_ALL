@@ -17,6 +17,17 @@ static void ensurePathMemoryCardAccessible(const char *path)
 		ensureMemoryCardPortAccessible(1);
 }
 
+static int ensurePathDffsAccessible(const char *path)
+{
+#ifdef DFFS
+	if (isDffsPath(path))
+		return loadDffsModules();
+#else
+	(void)path;
+#endif
+	return 1;
+}
+
 #if FILEOP_TRACE
 #define FILEOP_TRACE_FD_SLOTS 128
 typedef struct
@@ -212,6 +223,8 @@ int genRmdir(char *path)
 	path = mapped_path;
 #endif
 
+	if (!ensurePathDffsAccessible(path))
+		return -1;
 	ensurePathMemoryCardAccessible(path);
 	genLimObjName(path, 0);
 #if FILEOP_TRACE
@@ -241,6 +254,8 @@ int genRemove(char *path)
 #endif
 
 	DPRINTF("%s: '%s'\n", __FUNCTION__, path);
+	if (!ensurePathDffsAccessible(path))
+		return -1;
 #if defined(ETH) || defined(UDPFS)
 	makeHostPath(mapped_path, path);
 	path = mapped_path;
@@ -270,6 +285,8 @@ int genGetStat(const char *path, iox_stat_t *stat)
 	if (path == NULL || path[0] == '\0' || stat == NULL)
 		return -1;
 	snprintf(stat_path, sizeof(stat_path), "%s", path);
+	if (!ensurePathDffsAccessible(stat_path))
+		return -1;
 #if defined(ETH) || defined(UDPFS)
 	makeHostPath(stat_path, stat_path);
 #endif
@@ -292,6 +309,8 @@ int genMkdir(const char *path, int mode)
 	if (path == NULL || path[0] == '\0')
 		return -1;
 	snprintf(mkdir_path, sizeof(mkdir_path), "%s", path);
+	if (!ensurePathDffsAccessible(mkdir_path))
+		return -1;
 #if defined(ETH) || defined(UDPFS)
 	makeHostPath(mkdir_path, mkdir_path);
 #endif
@@ -327,6 +346,8 @@ int genOpen(const char *path, int mode)
 		return -1;
 	DPRINTF("%s: '%s' @ %d\n", __FUNCTION__, path, mode);
 	snprintf(open_path, sizeof(open_path), "%s", path);
+	if (!ensurePathDffsAccessible(open_path))
+		return -1;
 #if defined(ETH) || defined(UDPFS)
 	makeHostPath(open_path, open_path);
 #endif
@@ -411,6 +432,8 @@ int genDopen(char *path)
 
 	DPRINTF("%s: '%s'\n", __FUNCTION__, path);
 
+	if (!ensurePathDffsAccessible(path))
+		return -1;
 	ensurePathMemoryCardAccessible(path);
 	if (!strncmp(path, "pfs", 3) || !strncmp(path, "vmc", 3)) {
 		char tmp[MAX_PATH];

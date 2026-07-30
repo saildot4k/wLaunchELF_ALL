@@ -673,6 +673,9 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 			} else {                                            //Handle folder copied to non-MC
 				if (!strncmp(out, "host", 4) || !strncmp(out, "udpfs", 5)) {  //for files copied to host/udpfs: we skip Chstat
 				} else if (!strncmp(out, "mass", 4)) {  //for files copied to mass: we skip Chstat
+#ifdef DFFS
+				} else if (isDffsPath(out)) {  //for files copied to dffs: we skip Chstat
+#endif
 #ifdef MX4SIO
 				} else if (!strncmp(out, "mx4sio", 6)) {  //for files copied to mx4sio: we skip Chstat
 #endif
@@ -1065,6 +1068,9 @@ copy_file_data_done:
 	} else {                                          //Handle file copied to non-MC
 		if (!strncmp(out, "host", 4) || !strncmp(out, "udpfs", 5)) {  //for files copied to host/udpfs: we skip Chstat
 		} else if (!strncmp(out, "mass", 4)) {  //for files copied to mass: we skip Chstat
+#ifdef DFFS
+		} else if (isDffsPath(out)) {  //for files copied to dffs: we skip Chstat
+#endif
 #ifdef MX4SIO
 			} else if (!strncmp(out, "mx4sio", 6)) {  //for files copied to mx4sio: we skip Chstat
 #endif

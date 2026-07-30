@@ -79,6 +79,10 @@ static const char *getRootDeviceLabel(const char *name)
 	if (!strcmp(name, "xfrom0:") || !strcmp(name, "xfrom:"))
 		return "xfrom:/";
 #endif
+#ifdef DFFS
+	if (!strcmp(name, "dffs:"))
+		return "dffs:/";
+#endif
 #ifdef DVRP
 	if (!strcmp(name, "dvr_hdd0:"))
 		return "dvr:/";
