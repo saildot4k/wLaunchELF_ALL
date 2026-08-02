@@ -3,6 +3,7 @@
 //--------------------------------------------------------------
 #include "launchelf.h"
 #include "draw_private.h"
+#include "gui_assets.h"
 #include "main_title.h"
 
 GSGLOBAL *gsGlobal;
@@ -163,6 +164,9 @@ void loadIcon(void)
 //--------------------------------------------------------------
 void clrScr(u64 color)
 {
+	if (setting != NULL && color == setting->color[COLOR_BACKGR] && guiDrawBackground())
+		return;
+
 	gsKit_prim_sprite(gsGlobal, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, color);
 }
 

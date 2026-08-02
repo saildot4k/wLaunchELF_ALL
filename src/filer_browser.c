@@ -5,12 +5,14 @@
 #include "gui_texteditor.h"
 #include "filer_actions.h"
 #include "filer_shared.h"
+#include "gui_assets.h"
 #include "gui_hdd0_format.h"
 #include "gui_icons.h"
 #include "init.h"
 
 #define SOURCE_DEVICE_WAIT_INTERVAL_MS 1000
 #define SOURCE_DEVICE_WAIT_TIMEOUT_MS 6000
+#define TEXTURE_ICON_NAME_OFFSET 24
 
 static int isHddBrowserPath(const char *path)
 {
@@ -1633,8 +1635,13 @@ int getFilePath(char *out, int cnfmode)
 
 			for (i = 0; i < rows; i++)  //Repeat loop for each browser text row
 			{
-				mcTitle = NULL;      //Assume that normal file/folder names are to be displayed
-				int name_limit = 0;  //Assume that no name length problems exist
+				int name_x = x + 4;
+				int texture_icons = (!setting->FB_NoIcons && guiAssetsReady());
+				mcTitle = NULL;          //Assume that normal file/folder names are to be displayed
+				int name_limit = 0;      //Assume that no name length problems exist
+
+				if (texture_icons)
+					name_x += TEXTURE_ICON_NAME_OFFSET;
 
 				if (top + i >= browser_nfiles)
 					break;
@@ -1667,6 +1674,8 @@ int getFilePath(char *out, int cnfmode)
 					} else {  //Filenames are shown without file details
 						name_limit = 71 * 8;
 					}
+					if (texture_icons && name_limit > TEXTURE_ICON_NAME_OFFSET)
+						name_limit -= TEXTURE_ICON_NAME_OFFSET;
 				}
 				if (name_limit) {                   //Do we need to check name length ?
 					int name_end = name_limit / 7;  //Max string length for acceptable spacing
@@ -1682,9 +1691,9 @@ int getFilePath(char *out, int cnfmode)
 				if (files[top + i].stats.AttrFile & sceMcFileAttrSubdir && path[0] != 0)
 					strcat(tmp, "/");
 				if (mcTitle != NULL)
-					printXY_sjis(mcTitle, x + 4, y, color, TRUE);
+					printXY_sjis(mcTitle, name_x, y, color, TRUE);
 				else
-					printXY(tmp, x + 4, y, color, TRUE, name_limit);
+					printXY(tmp, name_x, y, color, TRUE, name_limit);
 				if (file_show > 0) {
 					//					unsigned int size = files[top+i].stats.fileSizeByte;
 					u64 size = ((u64)files[top + i].stats.Reserve2 << 32) | files[top + i].stats.FileSizeByte;
@@ -1727,12 +1736,17 @@ int getFilePath(char *out, int cnfmode)
 					if (marks[top + i])
 						drawChar('*', x - 6, y, setting->color[COLOR_TEXT]);
 				} else {  //if Icons must be used in front of file/folder names
-					GuiLegacyFontIcon icon = guiLegacyFontIconForGuiIcon(
-					    guiIconForFileEntry(path, &files[top + i]),
-					    marks[top + i]);
+					GuiIconId icon_id = guiIconForFileEntry(path, &files[top + i]);
 
-					drawChar(icon.iconbase, x - 3 - FONT_WIDTH, y, setting->color[icon.color_id]);
-					drawChar(icon.iconbase + 1, x - 3, y, setting->color[icon.color_id]);
+					if (texture_icons && guiDrawFileIcon(icon_id, x - 3 - FONT_WIDTH, y)) {
+						if (marks[top + i])
+							drawChar('*', x - 3 - 2 * FONT_WIDTH, y, setting->color[COLOR_TEXT]);
+					} else {
+						GuiLegacyFontIcon icon = guiLegacyFontIconForGuiIcon(icon_id, marks[top + i]);
+
+						drawChar(icon.iconbase, x - 3 - FONT_WIDTH, y, setting->color[icon.color_id]);
+						drawChar(icon.iconbase + 1, x - 3, y, setting->color[icon.color_id]);
+					}
 				}
 				y += font_height;
 			}                             //ends for, so all browser rows were fixed above

@@ -29,7 +29,7 @@ else
   EE_BIN_PKD = BOOT.ELF
 endif
 EE_OBJS = main.o main_actions.o main_boot.o main_modules.o main_menu.o main_title.o main_info_screens.o main_console_info.o main_gameid.o main_gameid_table.o main_history.o init.o main_startup.o main_fileops.o main_exploit_installer.o config.o config_screen.o config_startup.o config_network.o config_advanced.o gui.o gui_colors.o virtual_keyboard.o elf.o draw.o draw_gs.o draw_text.o loader_elf.o filer.o filer_device.o filer_mount.o filer_fileops.o filer_actions.o filer_browser.o filer_copy.o \
-	gui_sort.o gui_texteditor.o gui_hdd0_format.o gui_icons.o psu_functions.o \
+	gui_sort.o gui_texteditor.o gui_hdd0_format.o gui_icons.o gui_assets.o gui_assets_data.o psu_functions.o \
 	poweroff_irx.o iomanx_irx.o filexio_irx.o ps2dev9_irx.o dev9_poweroff_irx.o \
 	ps2hdd_irx.o ps2fs_irx.o usbd_irx.o mcman_irx.o mcserv_irx.o \
 	cdvd_irx.o xparam_irx.o vmcman_irx.o ps2kbd_irx.o \
@@ -230,6 +230,8 @@ endif
 EE_OBJS_DIR = obj/
 EE_ASM_DIR = asm/
 EE_SRC_DIR = src/
+GUI_ASSET_SCRIPT = scripts/build_gui_assets.py
+GUI_ASSET_SOURCE = gfx/assets/bg.png gfx/assets/logo_splash.png $(wildcard gfx/assets/icons/*.png)
 DS34_OFF_OBJ_DIR = obj-ds34-off/
 DS34_OFF_ASM_DIR = asm-ds34-off/
 DS34_ON_OBJ_DIR = obj-ds34-on/
@@ -371,6 +373,9 @@ info2:
 	$(info MMCE=$(MMCE), IOP_RESET=$(IOP_RESET))
 
 #special recipe for compiling and dumping obj to subfolder
+$(EE_SRC_DIR)gui_assets_data.c: $(GUI_ASSET_SCRIPT) $(GUI_ASSET_SOURCE)
+	python3 $(GUI_ASSET_SCRIPT) $@
+
 $(EE_OBJS_DIR)%.o: $(EE_SRC_DIR)%.c | $(EE_OBJS_DIR)
 	@echo -e "\033[1m CC  - $@\033[0m"
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@

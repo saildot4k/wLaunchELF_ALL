@@ -2,6 +2,7 @@
 //File name:   draw_gs.c
 //--------------------------------------------------------------
 #include "draw_private.h"
+#include "gui_assets.h"
 
 static void applyGSParams(void)
 {
@@ -138,6 +139,7 @@ void updateScreenMode(void)
 	if (setGS_flag) {
 		// Init screen modes
 		gsKit_init_screen(gsGlobal);
+		guiAssetsInvalidate();
 	}
 
 	// Screen Position Init

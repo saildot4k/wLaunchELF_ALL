@@ -2,6 +2,7 @@
 //File name:   main_startup.c
 //--------------------------------------------------------------
 #include "launchelf.h"
+#include "gui_assets.h"
 #include "init.h"
 #include "main_gameid.h"
 #include "main_startup.h"
@@ -621,6 +622,10 @@ void initializeBootGraphics(void)
 	setupGS();
 	gsKit_clear(gsGlobal, GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x00, 0x00));
 	loadFont("");
+	guiAssetsUpload();
+	guiDrawBackground();
+	guiDrawSplash();
+	drawScr();
 	setInitPhaseComplete();
 }
 //------------------------------
