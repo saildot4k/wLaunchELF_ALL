@@ -53,7 +53,7 @@ static const char *icon_asset_names[GUI_ICON_COUNT] = {
 
 static const char *archive_exts[] = {
     "7Z", "APK", "ARJ", "BZ", "CAB", "DEB", "DMG", "GZ",
-    "JAR", "LHA", "LZ", "LZ4", "LZH", "LZMA", "LZX", "MSI",
+    "JAR", "LHA", "LZ", "LZ4", "LZH", "LZMA", "LZO", "LZX", "MSI",
     "PAK", "PBP", "PKG", "RAR", "RPM", "SIT", "SITX", "TAR",
     "TGZ", "WAD", "WIM", "XZ", "Z", "ZIP", "ZST", NULL};
 

@@ -13,6 +13,7 @@
 #define SOURCE_DEVICE_WAIT_INTERVAL_MS 1000
 #define SOURCE_DEVICE_WAIT_TIMEOUT_MS 6000
 #define TEXTURE_ICON_NAME_OFFSET 18
+#define BROWSER_ROW_GAP 1
 
 static int isHddBrowserPath(const char *path)
 {
@@ -980,7 +981,7 @@ int getFilePath(char *out, int cnfmode)
 	int i, j, ret, rv = -1;  //NB: rv is for return value of this function
 	int usb_unit;
 	int event, post_event = 0;
-	int font_height;
+	int font_height, row_height;
 
 	elisa_failed = FALSE;  //set at failure to load font, cleared at each browser entry
 
@@ -1010,7 +1011,8 @@ int getFilePath(char *out, int cnfmode)
 	font_height = FONT_HEIGHT;
 	if ((file_show == 2) && (elisaFnt != NULL))
 		font_height = FONT_HEIGHT + 2;
-	rows = (Menu_end_y - Menu_start_y) / font_height;
+	row_height = font_height + BROWSER_ROW_GAP;
+	rows = (Menu_end_y - Menu_start_y + BROWSER_ROW_GAP) / row_height;
 
 	event = 1;  //event = initial entry
 	while (1) {
@@ -1632,7 +1634,8 @@ int getFilePath(char *out, int cnfmode)
 				y -= 2;
 				font_height = FONT_HEIGHT + 2;
 			}
-			rows = (Menu_end_y - Menu_start_y) / font_height;
+			row_height = font_height + BROWSER_ROW_GAP;
+			rows = (Menu_end_y - Menu_start_y + BROWSER_ROW_GAP) / row_height;
 
 			for (i = 0; i < rows; i++)  //Repeat loop for each browser text row
 			{
@@ -1647,7 +1650,7 @@ int getFilePath(char *out, int cnfmode)
 				if (top + i >= browser_nfiles)
 					break;
 				if (isRootSpacerEntry(path, &files[top + i])) {
-					y += font_height;
+					y += row_height;
 					continue;
 				}
 				if (top + i == browser_sel)
@@ -1749,7 +1752,7 @@ int getFilePath(char *out, int cnfmode)
 						drawChar(icon.iconbase + 1, x - 3, y, setting->color[icon.color_id]);
 					}
 				}
-				y += font_height;
+				y += row_height;
 			}                             //ends for, so all browser rows were fixed above
 			if (browser_nfiles > rows) {  //if more files than available rows, use scrollbar
 				drawFrame(SCREEN_WIDTH - SCREEN_MARGIN - LINE_THICKNESS * 8, Frame_start_y,
