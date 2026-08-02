@@ -1739,7 +1739,7 @@ int getFilePath(char *out, int cnfmode)
 				} else {  //if Icons must be used in front of file/folder names
 					GuiIconId icon_id = guiIconForFileEntry(path, &files[top + i]);
 
-					if (texture_icons && guiDrawFileIcon(icon_id, x - 2 - FONT_WIDTH, y)) {
+					if (texture_icons && guiDrawFileIcon(icon_id, x - 1 - FONT_WIDTH, y)) {
 						if (marks[top + i])
 							drawChar('*', x - 3 - 2 * FONT_WIDTH, y, setting->color[COLOR_TEXT]);
 					} else {
