@@ -23,27 +23,27 @@ static int guiButtonForTextHint(const char *text, GuiButtonId *button_id, int *l
 {
 	static const struct {
 		const char *text;
+		int consumed_length;
 		GuiButtonId button_id;
 	} hints[] = {
-		{"L1/", GUI_BUTTON_L1},
-		{"L2/", GUI_BUTTON_L2},
-		{"L1:", GUI_BUTTON_L1},
-		{"L2:", GUI_BUTTON_L2},
-		{"L3:", GUI_BUTTON_L3},
-		{"R1:", GUI_BUTTON_R1},
-		{"R2:", GUI_BUTTON_R2},
-		{"R3:", GUI_BUTTON_R3},
-		{"Select:", GUI_BUTTON_SELECT},
-		{"Sel:", GUI_BUTTON_SELECT},
-		{"Start:", GUI_BUTTON_START},
-		{"Auto:", GUI_BUTTON_AUTO},
+		{"L1/", 2, GUI_BUTTON_L1},
+		{"L2/", 2, GUI_BUTTON_L2},
+		{"L1:", 2, GUI_BUTTON_L1},
+		{"L2:", 2, GUI_BUTTON_L2},
+		{"L3:", 2, GUI_BUTTON_L3},
+		{"R1:", 2, GUI_BUTTON_R1},
+		{"R2:", 2, GUI_BUTTON_R2},
+		{"R3:", 2, GUI_BUTTON_R3},
+		{"Select:", 6, GUI_BUTTON_SELECT},
+		{"Sel:", 3, GUI_BUTTON_SELECT},
+		{"Start:", 5, GUI_BUTTON_START},
 	};
 	int index;
 
 	for (index = 0; index < (int)(sizeof(hints) / sizeof(hints[0])); index++) {
 		if (!strncmp(text, hints[index].text, strlen(hints[index].text))) {
 			*button_id = hints[index].button_id;
-			*length = strlen(hints[index].text);
+			*length = hints[index].consumed_length;
 			return 1;
 		}
 	}

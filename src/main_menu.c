@@ -109,7 +109,7 @@ int drawMainMenuScreen(MainMenuState *state, const char *main_msg)
 			state->menu_lk[nElfs] = i;  //memorize RunElf index for this menu entry
 				switch (i) {
 					case SETTING_LK_AUTO:
-						strcpy(c, "Auto: ");
+						strcpy(c, "  Auto: ");
 					break;
 				case SETTING_LK_CIRCLE:
 					strcpy(c, "     \xFF"
@@ -146,10 +146,10 @@ int drawMainMenuScreen(MainMenuState *state, const char *main_msg)
 					strcpy(c, "     R3: ");
 					break;
 					case SETTING_LK_START:
-						strcpy(c, "  Start: ");
+						strcpy(c, "     Start: ");
 						break;
 					case SETTING_LK_SELECT:
-						strcpy(c, " Select: ");
+						strcpy(c, "     Select: ");
 					break;
 				case SETTING_LK_LEFT:
 					sprintf(c, "%s: ", LNG(LEFT));
