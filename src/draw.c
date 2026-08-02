@@ -97,16 +97,16 @@ void setScrTmp(const char *msg0, const char *msg1)
 //--------------------------------------------------------------
 void drawSprite(u64 color, int x1, int y1, int x2, int y2)
 {
-	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, GUI_Z_CONTENT, color);
-}
-//--------------------------------------------------------------
-void drawPopSprite(u64 color, int x1, int y1, int x2, int y2)
-{
 	if (setting != NULL && color == setting->color[COLOR_BACKGR] &&
 	    guiDrawBackgroundRegion(x1, y1, x2, y2, GUI_Z_CONTENT))
 		return;
 
 	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, GUI_Z_CONTENT, color);
+}
+//--------------------------------------------------------------
+void drawPopSprite(u64 color, int x1, int y1, int x2, int y2)
+{
+	drawSprite(color, x1, y1, x2, y2);
 }
 //--------------------------------------------------------------
 //drawOpSprite exists only to eliminate the use of primitive sprite functions

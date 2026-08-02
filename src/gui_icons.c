@@ -119,14 +119,14 @@ static const char *save_ps2_exts[] = {
     "CBS", "MAX", "NPO", "PSU", "SPS", "XPS", NULL};
 
 static const char *script_exts[] = {
-    "ARG", "CMD", "JS", "LUA", "PBT", "PS", "RSH", "SH", NULL};
+    "CMD", "JS", "LUA", "PBT", "PS", "RSH", "SH", NULL};
 
 static const char *system_exts[] = {
-    "CFG", "CNF", "IFO", "INI", "SFO", "SYS", NULL};
+    "ARG", "CFG", "CNF", "IFO", "INI", "SFO", "SYS", "TOML", "YAML", "YML", NULL};
 
 static const char *text_exts[] = {
     "C", "CPP", "CS", "DOC", "DOCX", "H", "HTM", "HTML", "MD", "MHT", "NFO",
-    "PDF", "RTF", "TOML", "TXT", "XHTML", "XML", "YAML", "YML", NULL};
+    "PDF", "RTF", "TXT", "XHTML", "XML", NULL};
 
 static const char *video_exts[] = {
     "3GP", "AVI", "BIK", "DIVX", "FLV", "GVI", "M2TS", "M4P",

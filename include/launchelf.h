@@ -460,6 +460,7 @@ int loadFont(char *path_arg);
 
 extern u32 joy_value;
 extern u32 new_pad;
+extern u32 paddata;
 #ifdef DS34
 extern int semRunning,semFinish;
 extern int isRunning;

@@ -1,4 +1,5 @@
 #include "launchelf.h"
+#include "gui_assets.h"
 
 int ynDialog(const char *message)
 {
@@ -364,7 +365,8 @@ int keyboard(char *out, int max)
 
 			x = SCREEN_MARGIN;
 			y = Menu_tooltip_y;
-			drawSprite(setting->color[COLOR_BACKGR], 0, y - 1, SCREEN_WIDTH, y + FONT_HEIGHT);
+			if (!guiDrawBackgroundRegion(0, y - 1, SCREEN_WIDTH, y + FONT_HEIGHT, GUI_Z_CONTENT))
+				drawSprite(setting->color[COLOR_BACKGR], 0, y - 1, SCREEN_WIDTH, y + FONT_HEIGHT);
 
 			if (swapKeys) {
 				sprintf(tmp, "\xFF"
@@ -378,10 +380,10 @@ int keyboard(char *out, int max)
 				        LNG(Use));
 			}
 			sprintf(tmp + strlen(tmp), ":%s \xFF"
-			                           "2:%s L1:%s R1:%s START:%s \xFF"
+			                           "2:%s L1:%s R1:%s Start:%s \xFF"
 			                           "3:%s",
 			        LNG(BackSpace), LNG(CAPS), LNG(Left), LNG(Right), LNG(Enter), LNG(Exit));
-			printXY(tmp, x, y, setting->color[COLOR_SELECT], TRUE, 0);
+			printXYNoButtonHintColons(tmp, x, y, setting->color[COLOR_SELECT], TRUE, 0);
 		}
 		drawScr();
 		post_event = event;

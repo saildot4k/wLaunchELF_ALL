@@ -982,6 +982,7 @@ int getFilePath(char *out, int cnfmode)
 	int usb_unit;
 	int event, post_event = 0;
 	int font_height, row_height;
+	u32 browser_boundary_hold = 0;
 
 	elisa_failed = FALSE;  //set at failure to load font, cleared at each browser entry
 
@@ -1016,59 +1017,86 @@ int getFilePath(char *out, int cnfmode)
 
 	event = 1;  //event = initial entry
 	while (1) {
+		int pad_event;
 
 		//Pad response section
 		waitPadReady(0, 0);
-		if (readpad()) {
-			int step;
+		pad_event = readpad();
+		browser_boundary_hold &= paddata;
+		if (pad_event) {
+			int step, first_entry = 0, last_entry = browser_nfiles - 1;
+
+			if (browser_nfiles > 0) {
+				skipRootSpacerSelection(path, files, browser_nfiles, &first_entry, 1);
+				skipRootSpacerSelection(path, files, browser_nfiles, &last_entry, -1);
+			}
 			if (new_pad) {
 				browser_pushed = TRUE;
 				event |= 2;  //event |= pad command
 			}
 			if (new_pad & PAD_UP) {
 				if (browser_nfiles > 0) {
-					if (browser_sel > 0)
+					if (browser_sel == first_entry) {
+						if (!(browser_boundary_hold & PAD_UP))
+							browser_sel = last_entry;
+					} else {
 						browser_sel--;
-					else
-						browser_sel = browser_nfiles - 1;
-					skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, -1);
+						skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, -1);
+						if (browser_sel == first_entry)
+							browser_boundary_hold |= PAD_UP;
+					}
 				}
 			} else if (new_pad & PAD_DOWN) {
 				if (browser_nfiles > 0) {
-					if (browser_sel < browser_nfiles - 1)
+					if (browser_sel == last_entry) {
+						if (!(browser_boundary_hold & PAD_DOWN))
+							browser_sel = first_entry;
+					} else {
 						browser_sel++;
-					else
-						browser_sel = 0;
-					skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, 1);
-				}
-				} else if (new_pad & PAD_LEFT) {
-					if (browser_nfiles > 0) {
-						step = rows / 2;
-						if (step < 1)
-							step = 1;
-						if (browser_sel == 0)
-							browser_sel = browser_nfiles - 1;
-						else if (browser_sel < step)
-							browser_sel = 0;
-						else
-							browser_sel -= step;
-						skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, -1);
-					}
-				} else if (new_pad & PAD_RIGHT) {
-					if (browser_nfiles > 0) {
-						step = rows / 2;
-						if (step < 1)
-							step = 1;
-						if (browser_sel == browser_nfiles - 1)
-							browser_sel = 0;
-						else if (browser_sel >= (browser_nfiles - step))
-							browser_sel = browser_nfiles - 1;
-						else
-							browser_sel += step;
 						skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, 1);
+						if (browser_sel == last_entry)
+							browser_boundary_hold |= PAD_DOWN;
 					}
 				}
-			else if (new_pad & PAD_TRIANGLE)
+			} else if (new_pad & PAD_LEFT) {
+				if (browser_nfiles > 0) {
+					step = rows / 2;
+					if (step < 1)
+						step = 1;
+					if (browser_sel == first_entry) {
+						if (!(browser_boundary_hold & PAD_LEFT))
+							browser_sel = last_entry;
+					} else {
+						if (browser_sel - step <= first_entry)
+							browser_sel = first_entry;
+						else {
+							browser_sel -= step;
+							skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, -1);
+						}
+						if (browser_sel == first_entry)
+							browser_boundary_hold |= PAD_LEFT;
+					}
+				}
+			} else if (new_pad & PAD_RIGHT) {
+				if (browser_nfiles > 0) {
+					step = rows / 2;
+					if (step < 1)
+						step = 1;
+					if (browser_sel == last_entry) {
+						if (!(browser_boundary_hold & PAD_RIGHT))
+							browser_sel = first_entry;
+					} else {
+						if (browser_sel + step >= last_entry)
+							browser_sel = last_entry;
+						else {
+							browser_sel += step;
+							skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, 1);
+						}
+						if (browser_sel == last_entry)
+							browser_boundary_hold |= PAD_RIGHT;
+					}
+				}
+			} else if (new_pad & PAD_TRIANGLE)
 				browser_up = TRUE;
 			else if ((swapKeys && (new_pad & PAD_CROSS)) || (!swapKeys && (new_pad & PAD_CIRCLE))) {  //Pushed OK
 				if (files[browser_sel].stats.AttrFile & sceMcFileAttrSubdir) {
