@@ -95,6 +95,7 @@ void setupGS(void)
 
 	// Screen Init (will also clear screen once)
 	gsKit_init_screen(gsGlobal);
+	gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
 	gsKit_set_test(gsGlobal, GS_ZTEST_ON);
 
 	// Screen Position Init
@@ -141,6 +142,7 @@ void updateScreenMode(void)
 	if (setGS_flag) {
 		// Init screen modes
 		gsKit_init_screen(gsGlobal);
+		gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
 		gsKit_set_test(gsGlobal, GS_ZTEST_ON);
 		guiAssetsInvalidate();
 	}
