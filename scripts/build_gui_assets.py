@@ -41,8 +41,29 @@ ICON_ORDER = [
     "file_vmc_ps2",
 ]
 
+BUTTON_ORDER = [
+    "up",
+    "down",
+    "left",
+    "right",
+    "circle",
+    "cross",
+    "square",
+    "triangle",
+    "select",
+    "start",
+    "L1",
+    "L2",
+    "L3",
+    "R1",
+    "R2",
+    "R3",
+    "auto",
+]
+
 ASSET_ROOT = Path("gfx/assets")
 ICON_ROOT = ASSET_ROOT / "icons"
+BUTTON_ROOT = ASSET_ROOT / "buttons"
 
 
 def paeth(a, b, c):
@@ -251,6 +272,29 @@ def build_icon_atlas():
     return atlas, atlas_width, atlas_height
 
 
+def build_button_atlas():
+    button_height = 32
+    button_cell_width = 64
+    columns = 4
+    rows = math.ceil(len(BUTTON_ORDER) / columns)
+    atlas_width = columns * button_cell_width
+    atlas_height = rows * button_height
+    atlas = bytearray(atlas_width * atlas_height * 4)
+
+    for index, name in enumerate(BUTTON_ORDER):
+        button_width = 64 if name == "auto" else 32
+        pixels = load_rgba(BUTTON_ROOT / f"{name}.png", button_width, button_height)
+        dst_x = (index % columns) * button_cell_width
+        dst_y = (index // columns) * button_height
+
+        for y in range(button_height):
+            src_offset = y * button_width * 4
+            dst_offset = ((dst_y + y) * atlas_width + dst_x) * 4
+            atlas[dst_offset:dst_offset + button_width * 4] = pixels[src_offset:src_offset + button_width * 4]
+
+    return atlas, atlas_width, atlas_height
+
+
 def write_array(out, name, data):
     out.write(f"u8 {name}[] __attribute__((aligned(128))) = {{\n")
     for pos in range(0, len(data), 16):
@@ -264,6 +308,7 @@ def main():
     bg = load_rgba(ASSET_ROOT / "bg.png", 256, 256)
     splash = load_rgba(ASSET_ROOT / "logo_splash.png", 512, 256)
     icons, atlas_width, atlas_height = build_icon_atlas()
+    buttons, button_atlas_width, button_atlas_height = build_button_atlas()
 
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", newline="\n") as out:
@@ -271,9 +316,12 @@ def main():
         out.write("#include <tamtypes.h>\n\n")
         out.write(f"const unsigned int gui_asset_icon_atlas_width = {atlas_width};\n")
         out.write(f"const unsigned int gui_asset_icon_atlas_height = {atlas_height};\n\n")
+        out.write(f"const unsigned int gui_asset_button_atlas_width = {button_atlas_width};\n")
+        out.write(f"const unsigned int gui_asset_button_atlas_height = {button_atlas_height};\n\n")
         write_array(out, "gui_asset_bg_rgba", bg)
         write_array(out, "gui_asset_splash_rgba", splash)
         write_array(out, "gui_asset_icons_rgba", icons)
+        write_array(out, "gui_asset_buttons_rgba", buttons)
 
 
 if __name__ == "__main__":

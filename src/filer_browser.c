@@ -1833,9 +1833,14 @@ int getFilePath(char *out, int cnfmode)
 				else
 					sprintf(tmp, "[%dB %s]", (int)freeSpace, LNG(free));
 				ret = strlen(tmp);
-				drawSprite(setting->color[COLOR_BACKGR],
-				           SCREEN_WIDTH - SCREEN_MARGIN - (ret + 1) * FONT_WIDTH, (Menu_message_y - 1),
-				           SCREEN_WIDTH - SCREEN_MARGIN, (Menu_message_y + FONT_HEIGHT));
+				if (!guiDrawBackgroundRegion(SCREEN_WIDTH - SCREEN_MARGIN - (ret + 1) * FONT_WIDTH,
+				                             Menu_message_y - 1,
+				                             SCREEN_WIDTH - SCREEN_MARGIN,
+				                             Menu_message_y + FONT_HEIGHT,
+				                             GUI_Z_CONTENT))
+					drawSprite(setting->color[COLOR_BACKGR],
+					           SCREEN_WIDTH - SCREEN_MARGIN - (ret + 1) * FONT_WIDTH, Menu_message_y - 1,
+					           SCREEN_WIDTH - SCREEN_MARGIN, Menu_message_y + FONT_HEIGHT);
 				printXY(tmp,
 				        SCREEN_WIDTH - SCREEN_MARGIN - ret * FONT_WIDTH,
 				        (Menu_message_y),

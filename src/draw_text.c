@@ -2,6 +2,59 @@
 //File name:   draw_text.c
 //--------------------------------------------------------------
 #include "draw_private.h"
+#include "gui_assets.h"
+
+static GuiButtonId guiButtonForLegacyHint(unsigned int character)
+{
+	switch (character) {
+		case '0': return GUI_BUTTON_CIRCLE;
+		case '1': return GUI_BUTTON_CROSS;
+		case '2': return GUI_BUTTON_SQUARE;
+		case '3': return GUI_BUTTON_TRIANGLE;
+		case ':': return GUI_BUTTON_RIGHT;
+		case ';': return GUI_BUTTON_DOWN;
+		case '<': return GUI_BUTTON_LEFT;
+		case '=': return GUI_BUTTON_UP;
+		default: return GUI_BUTTON_COUNT;
+	}
+}
+
+static int guiButtonForTextHint(const char *text, GuiButtonId *button_id, int *length)
+{
+	static const struct {
+		const char *text;
+		GuiButtonId button_id;
+	} hints[] = {
+		{"L1/", GUI_BUTTON_L1},
+		{"L2/", GUI_BUTTON_L2},
+		{"L1:", GUI_BUTTON_L1},
+		{"L2:", GUI_BUTTON_L2},
+		{"L3:", GUI_BUTTON_L3},
+		{"R1:", GUI_BUTTON_R1},
+		{"R2:", GUI_BUTTON_R2},
+		{"R3:", GUI_BUTTON_R3},
+		{"Select:", GUI_BUTTON_SELECT},
+		{"Sel:", GUI_BUTTON_SELECT},
+		{"Start:", GUI_BUTTON_START},
+		{"Auto:", GUI_BUTTON_AUTO},
+	};
+	int index;
+
+	for (index = 0; index < (int)(sizeof(hints) / sizeof(hints[0])); index++) {
+		if (!strncmp(text, hints[index].text, strlen(hints[index].text))) {
+			*button_id = hints[index].button_id;
+			*length = strlen(hints[index].text);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int drawGuiButtonHint(GuiButtonId button_id, int x, int y, int draw)
+{
+	return !draw || guiDrawButton(button_id, x, y);
+}
 
 //The font file ELISA100.FNT is needed to display MC save titles in japanese
 //and the arrays defined here are needed to find correct data in that file
@@ -153,6 +206,8 @@ void drawChar2(int n, int x, int y, u64 colour)
 int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
 {
 	unsigned int c1, c2;
+	GuiButtonId button_id;
+	int button_length;
 	int i;
 	int text_spacing = 8;
 
@@ -169,6 +224,14 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
 	i = 0;
 	while ((c1 = (unsigned char)s[i++]) != 0) {
 		if (c1 != 0xFF) {  // Normal character
+			if (guiButtonForTextHint(&s[i - 1], &button_id, &button_length) &&
+			    drawGuiButtonHint(button_id, x, y, draw)) {
+				x += guiButtonDrawWidth(button_id);
+				i += button_length - 1;
+				if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
+					break;
+				continue;
+			}
 			if (draw)
 				drawChar(c1, x, y, colour);
 			x += text_spacing;
@@ -181,6 +244,13 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
 			break;
 		if ((c2 < '0') || (c2 > '='))
 			continue;
+		button_id = guiButtonForLegacyHint(c2);
+		if (button_id != GUI_BUTTON_COUNT && drawGuiButtonHint(button_id, x, y, draw)) {
+			x += guiButtonDrawWidth(button_id);
+			if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
+				break;
+			continue;
+		}
 		c1 = (c2 - '0') * 2 + 0x100;
 		if (draw) {
 			//expand sequence �0=Circle  �1=Cross  �2=Square  �3=Triangle  �4=FilledBox
@@ -202,6 +272,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 	int n;
 	u8 ascii;
 	u16 code;
+	GuiButtonId button_id;
 	int i, j, tmp;
 
 	i = 0;
@@ -214,6 +285,11 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 			switch (code) {
 				// Circle == "��"
 				case 0x819B:
+					button_id = GUI_BUTTON_CIRCLE;
+					if (drawGuiButtonHint(button_id, x, y, draw)) {
+						x += guiButtonDrawWidth(button_id);
+						break;
+					}
 					if (draw) {
 						drawChar(0x100, x, y, colour);
 						drawChar(0x101, x + 8, y, colour);
@@ -222,6 +298,11 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 					break;
 				// Cross == "\xff~"
 				case 0x817E:
+					button_id = GUI_BUTTON_CROSS;
+					if (drawGuiButtonHint(button_id, x, y, draw)) {
+						x += guiButtonDrawWidth(button_id);
+						break;
+					}
 					if (draw) {
 						drawChar(0x102, x, y, colour);
 						drawChar(0x103, x + 8, y, colour);
@@ -230,6 +311,11 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 					break;
 				// Square == "��"
 				case 0x81A0:
+					button_id = GUI_BUTTON_SQUARE;
+					if (drawGuiButtonHint(button_id, x, y, draw)) {
+						x += guiButtonDrawWidth(button_id);
+						break;
+					}
 					if (draw) {
 						drawChar(0x104, x, y, colour);
 						drawChar(0x105, x + 8, y, colour);
@@ -238,6 +324,11 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 					break;
 				// Triangle == "��"
 				case 0x81A2:
+					button_id = GUI_BUTTON_TRIANGLE;
+					if (drawGuiButtonHint(button_id, x, y, draw)) {
+						x += guiButtonDrawWidth(button_id);
+						break;
+					}
 					if (draw) {
 						drawChar(0x106, x, y, colour);
 						drawChar(0x107, x + 8, y, colour);

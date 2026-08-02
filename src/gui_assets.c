@@ -11,6 +11,14 @@
 #define GUI_ICON_ATLAS_COLUMNS 8
 #define GUI_ICON_ATLAS_WIDTH (GUI_ICON_ATLAS_COLUMNS * GUI_ICON_WIDTH)
 #define GUI_ICON_ATLAS_HEIGHT 64
+#define GUI_BUTTON_WIDTH 32
+#define GUI_BUTTON_HEIGHT 32
+#define GUI_BUTTON_AUTO_WIDTH 64
+#define GUI_BUTTON_ATLAS_COLUMNS 4
+#define GUI_BUTTON_ATLAS_CELL_WIDTH 64
+#define GUI_BUTTON_ATLAS_WIDTH (GUI_BUTTON_ATLAS_COLUMNS * GUI_BUTTON_ATLAS_CELL_WIDTH)
+#define GUI_BUTTON_ATLAS_HEIGHT 160
+#define GUI_BUTTON_DRAW_HEIGHT 16
 
 #ifndef GS_FILTER_NEAREST
 #define GS_FILTER_NEAREST GS_FILTER_LINEAR
@@ -21,10 +29,12 @@
 extern u8 gui_asset_bg_rgba[];
 extern u8 gui_asset_splash_rgba[];
 extern u8 gui_asset_icons_rgba[];
+extern u8 gui_asset_buttons_rgba[];
 
 static GSTEXTURE gui_bg_texture;
 static GSTEXTURE gui_splash_texture;
 static GSTEXTURE gui_icons_texture;
+static GSTEXTURE gui_buttons_texture;
 static int gui_assets_uploaded = 0;
 
 static void guiUploadTexture(GSTEXTURE *texture, u8 *data, int width, int height, int filter)
@@ -48,6 +58,7 @@ void guiAssetsUpload(void)
 	guiUploadTexture(&gui_bg_texture, gui_asset_bg_rgba, GUI_BG_WIDTH, GUI_BG_HEIGHT, GS_FILTER_LINEAR);
 	guiUploadTexture(&gui_splash_texture, gui_asset_splash_rgba, GUI_SPLASH_WIDTH, GUI_SPLASH_HEIGHT, GS_FILTER_NEAREST);
 	guiUploadTexture(&gui_icons_texture, gui_asset_icons_rgba, GUI_ICON_ATLAS_WIDTH, GUI_ICON_ATLAS_HEIGHT, GS_FILTER_NEAREST);
+	guiUploadTexture(&gui_buttons_texture, gui_asset_buttons_rgba, GUI_BUTTON_ATLAS_WIDTH, GUI_BUTTON_ATLAS_HEIGHT, GS_FILTER_NEAREST);
 	gui_assets_uploaded = 1;
 }
 
@@ -56,6 +67,7 @@ void guiAssetsInvalidate(void)
 	memset(&gui_bg_texture, 0, sizeof(gui_bg_texture));
 	memset(&gui_splash_texture, 0, sizeof(gui_splash_texture));
 	memset(&gui_icons_texture, 0, sizeof(gui_icons_texture));
+	memset(&gui_buttons_texture, 0, sizeof(gui_buttons_texture));
 	gui_assets_uploaded = 0;
 }
 
@@ -66,7 +78,7 @@ int guiAssetsReady(void)
 }
 
 static int guiDrawTexture(GSTEXTURE *texture,
-                          int src_x, int src_y, int src_w, int src_h,
+                          float src_x, float src_y, float src_w, float src_h,
                           int dst_x, int dst_y, int dst_w, int dst_h,
                           GuiZLayer z)
 {
@@ -93,6 +105,35 @@ int guiDrawBackground(void)
 	                      0, 0, GUI_BG_WIDTH, GUI_BG_HEIGHT,
 	                      0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
 	                      GUI_Z_BACKGROUND);
+}
+
+int guiDrawBackgroundRegion(int x1, int y1, int x2, int y2, GuiZLayer z)
+{
+	float src_x1, src_y1, src_x2, src_y2;
+
+	if (SCREEN_WIDTH <= 0 || SCREEN_HEIGHT <= 0)
+		return 0;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (y1 < 0)
+		y1 = 0;
+	if (x2 > SCREEN_WIDTH)
+		x2 = SCREEN_WIDTH;
+	if (y2 > SCREEN_HEIGHT)
+		y2 = SCREEN_HEIGHT;
+	if (x1 >= x2 || y1 >= y2)
+		return 0;
+
+	src_x1 = ((float)x1 * GUI_BG_WIDTH) / SCREEN_WIDTH;
+	src_y1 = ((float)y1 * GUI_BG_HEIGHT) / SCREEN_HEIGHT;
+	src_x2 = ((float)x2 * GUI_BG_WIDTH) / SCREEN_WIDTH;
+	src_y2 = ((float)y2 * GUI_BG_HEIGHT) / SCREEN_HEIGHT;
+
+	return guiDrawTexture(&gui_bg_texture,
+	                      src_x1, src_y1, src_x2 - src_x1, src_y2 - src_y1,
+	                      x1, y1, x2 - x1, y2 - y1,
+	                      z);
 }
 
 int guiDrawSplash(void)
@@ -124,5 +165,31 @@ int guiDrawFileIcon(GuiIconId icon_id, int x, int y)
 	return guiDrawTexture(&gui_icons_texture,
 	                      src_x, src_y, GUI_ICON_WIDTH, GUI_ICON_HEIGHT,
 	                      x, y, GUI_ICON_WIDTH, GUI_ICON_HEIGHT,
+	                      GUI_Z_CONTENT);
+}
+
+int guiButtonDrawWidth(GuiButtonId button_id)
+{
+	if (button_id < 0 || button_id >= GUI_BUTTON_COUNT)
+		return 0;
+
+	return (button_id == GUI_BUTTON_AUTO) ? GUI_BUTTON_DRAW_HEIGHT * 2 : GUI_BUTTON_DRAW_HEIGHT;
+}
+
+int guiDrawButton(GuiButtonId button_id, int x, int y)
+{
+	int src_x, src_y, src_w, dst_w;
+
+	if (button_id < 0 || button_id >= GUI_BUTTON_COUNT)
+		return 0;
+
+	src_x = (button_id % GUI_BUTTON_ATLAS_COLUMNS) * GUI_BUTTON_ATLAS_CELL_WIDTH;
+	src_y = (button_id / GUI_BUTTON_ATLAS_COLUMNS) * GUI_BUTTON_HEIGHT;
+	src_w = (button_id == GUI_BUTTON_AUTO) ? GUI_BUTTON_AUTO_WIDTH : GUI_BUTTON_WIDTH;
+	dst_w = guiButtonDrawWidth(button_id);
+
+	return guiDrawTexture(&gui_buttons_texture,
+	                      src_x, src_y, src_w, GUI_BUTTON_HEIGHT,
+	                      x, y, dst_w, GUI_BUTTON_DRAW_HEIGHT,
 	                      GUI_Z_CONTENT);
 }
