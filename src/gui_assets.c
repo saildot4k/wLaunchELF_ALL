@@ -1,4 +1,5 @@
 #include "launchelf.h"
+#include "draw_private.h"
 #include "gui_assets.h"
 
 #define GUI_BG_WIDTH 256
@@ -31,7 +32,7 @@ static void guiUploadTexture(GSTEXTURE *texture, u8 *data, int width, int height
 	texture->Width = width;
 	texture->Height = height;
 	texture->PSM = GS_PSM_CT32;
-	texture->Mem = data;
+	texture->Mem = (u32 *)data;
 	texture->Vram = gsKit_vram_alloc(gsGlobal,
 	                                 gsKit_texture_size(texture->Width, texture->Height, texture->PSM),
 	                                 GSKIT_ALLOC_USERBUFFER);
