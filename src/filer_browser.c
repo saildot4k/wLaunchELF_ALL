@@ -586,9 +586,10 @@ static int menu(const char *path, FILEINFO *file)
 			//Tooltip section
 			x = SCREEN_MARGIN;
 			y = Menu_tooltip_y;
-			drawSprite(setting->color[COLOR_BACKGR],
-			           0, y - 1,
-			           SCREEN_WIDTH, y + FONT_HEIGHT);
+			if (!guiDrawBackgroundRegion(0, y - 1, SCREEN_WIDTH, y + FONT_HEIGHT, GUI_Z_CONTENT))
+				drawSprite(setting->color[COLOR_BACKGR],
+				           0, y - 1,
+				           SCREEN_WIDTH, y + FONT_HEIGHT);
 			if (swapKeys)
 				sprintf(tmp, "\xFF"
 				             "1:%s \xFF"

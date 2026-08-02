@@ -107,9 +107,9 @@ int drawMainMenuScreen(MainMenuState *state, const char *main_msg)
 	for (i = 0; i < SETTING_LK_BTN_COUNT; i++) {
 		if ((setting->LK_Path[i][0]) && ((i <= SETTING_LK_SELECT) || setting->LK_Flag[i])) {
 			state->menu_lk[nElfs] = i;  //memorize RunElf index for this menu entry
-			switch (i) {
-				case SETTING_LK_AUTO:
-					strcpy(c, "Default: ");
+				switch (i) {
+					case SETTING_LK_AUTO:
+						strcpy(c, "Auto: ");
 					break;
 				case SETTING_LK_CIRCLE:
 					strcpy(c, "     \xFF"
@@ -145,11 +145,11 @@ int drawMainMenuScreen(MainMenuState *state, const char *main_msg)
 				case SETTING_LK_R3:
 					strcpy(c, "     R3: ");
 					break;
-				case SETTING_LK_START:
-					strcpy(c, "  START: ");
-					break;
-				case SETTING_LK_SELECT:
-					strcpy(c, " SELECT: ");
+					case SETTING_LK_START:
+						strcpy(c, "  Start: ");
+						break;
+					case SETTING_LK_SELECT:
+						strcpy(c, " Select: ");
 					break;
 				case SETTING_LK_LEFT:
 					sprintf(c, "%s: ", LNG(LEFT));
