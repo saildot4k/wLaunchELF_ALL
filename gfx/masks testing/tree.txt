@@ -1,0 +1,315 @@
+.
+├── archives
+│   ├── test.7z
+│   ├── test.apk
+│   ├── test.arj
+│   ├── test.bz
+│   ├── test.cab
+│   ├── test.deb
+│   ├── test.dmg
+│   ├── test.gz
+│   ├── test.jar
+│   ├── test.lha
+│   ├── test.lz
+│   ├── test.lz4
+│   ├── test.lzh
+│   ├── test.lzma
+│   ├── testlzo
+│   ├── test.lzx
+│   ├── test.msi
+│   ├── test.pak
+│   ├── test.pbp
+│   ├── test.pkg
+│   ├── test.rar
+│   ├── test.rpm
+│   ├── test.sit
+│   ├── test.sitx
+│   ├── test.tar
+│   ├── test.tgz
+│   ├── test.wad
+│   ├── test.wim
+│   ├── test.xz
+│   ├── test.z
+│   ├── test.zip
+│   └── test.zst
+├── executables ps1
+│   └── test.psx
+├── executables ps2
+│   ├── test.elf
+│   ├── test.erx
+│   ├── test.irx
+│   ├── test.kelf
+│   ├── test.kirx
+│   ├── test.xin
+│   └── test.xlf
+├── executables windows
+│   ├── test.com
+│   ├── test.dll
+│   ├── test.exe
+│   └── test.sfx
+├── fonts
+│   ├── test.fnt
+│   ├── test.otf
+│   └── test.ttf
+├── game discs
+│   ├── compressed
+│   │   ├── test.cci
+│   │   ├── test.chd
+│   │   ├── test.ciso
+│   │   ├── test.cso
+│   │   ├── test.dax
+│   │   ├── test.ecm
+│   │   ├── test.gcz
+│   │   ├── test.jso
+│   │   ├── test.nkit
+│   │   ├── test.rvz
+│   │   ├── test.ziso
+│   │   └── test.zso
+│   ├── sheet
+│   │   ├── test.bws
+│   │   ├── test.ccd
+│   │   ├── test.cu2
+│   │   ├── test.cue
+│   │   ├── test.gdi
+│   │   └── test.mds
+│   ├── test.bin
+│   ├── test.bwt
+│   ├── test.cdi
+│   ├── test.gcm
+│   ├── test.gi
+│   ├── test.img
+│   ├── test.iso
+│   ├── test.mdf
+│   ├── test.nrg
+│   ├── test.pdi
+│   ├── test.vcd
+│   ├── test.wua
+│   ├── test.xgd
+│   └── test.xiso
+├── game diskettes
+│   ├── test.adf
+│   ├── test.fds
+│   ├── test.flp
+│   ├── test.ima
+│   └── test.ipf
+├── game disks
+│   ├── test.apa
+│   ├── test.dd
+│   ├── test.dsk
+│   ├── test.hvf
+│   ├── test.imgc
+│   ├── test.qcow
+│   ├── test.qcow2
+│   ├── test.vhd
+│   ├── test.vhdx
+│   └── test.wbfs
+├── game roms
+│   ├── test.68k
+│   ├── test.cci
+│   ├── test.cia
+│   ├── test.gb
+│   ├── test.gba
+│   ├── test.gbc
+│   ├── test.gen
+│   ├── test.gg
+│   ├── test.ms
+│   ├── test.n64
+│   ├── test.nds
+│   ├── test.nes
+│   ├── test.ngc
+│   ├── test.ngp
+│   ├── test.nsp
+│   ├── test.pce
+│   ├── test.sfc
+│   ├── test.smc
+│   ├── test.smd
+│   ├── test.sms
+│   ├── test.v64
+│   ├── test.vb
+│   ├── test.ws
+│   ├── test.xci
+│   ├── test.z3dsx
+│   ├── test.z64
+│   ├── test.zcci
+│   └── test.zcxi
+├── game tapes
+│   └── test.tap
+├── icons
+│   ├── test.icn
+│   └── test.ico
+├── language
+│   ├── test.lang
+│   └── test.lng
+├── music
+│   ├── test.aac
+│   ├── test.adp
+│   ├── test.adpcm
+│   ├── test.aiff
+│   ├── test.at3
+│   ├── test.atrac
+│   ├── test.flac
+│   ├── test.m4a
+│   ├── test.mp3
+│   ├── test.oga
+│   ├── test.ogg
+│   ├── test.opus
+│   ├── test.pcm
+│   ├── test.ss2
+│   ├── test.tta
+│   ├── test.vag
+│   ├── test.wav
+│   ├── test.wave
+│   ├── test.wma
+│   └── test.xa
+├── patches
+│   ├── test.cht
+│   ├── test.ips
+│   ├── test.ppf
+│   ├── test.ups
+│   └── test.xdelta
+├── pictures
+│   ├── test.avif
+│   ├── test.bmp
+│   ├── test.gif
+│   ├── test.gim
+│   ├── test.heif
+│   ├── test.jp2
+│   ├── test.jpeg
+│   ├── test.jpg
+│   ├── test.mpo
+│   ├── test.pcx
+│   ├── test.png
+│   ├── test.svg
+│   ├── test.tga
+│   ├── test.tif
+│   ├── test.tiff
+│   ├── test.tim
+│   ├── test.tim2
+│   ├── test.tim3
+│   └── test.webp
+├── saves other
+│   ├── test.gci
+│   ├── test.sav
+│   └── test.srm
+├── saves ps1
+│   └── test.mcs
+├── saves ps2
+│   ├── test.cbs
+│   ├── test.max
+│   ├── test.npo
+│   ├── test.psu
+│   ├── test.sps
+│   └── test.xps
+├── scripts
+│   ├── test.cmd
+│   ├── test.js
+│   ├── test.lua
+│   ├── test.pbt
+│   ├── test.ps
+│   ├── test.rsh
+│   └── test.sh
+├── source code
+│   ├── test.c
+│   ├── test.cpp
+│   ├── test.cs
+│   └── test.h
+├── system dirs
+│   ├── BADATA-SYSTEM
+│   ├── BAEXEC-DVDPLAYER
+│   ├── BAEXEC-OPENTUNA
+│   ├── BAEXEC-SYSTEM
+│   ├── BEDATA-SYSTEM
+│   ├── BEEXEC-DVDPLAYER
+│   ├── BEEXEC-OPENTUNA
+│   ├── BEEXEC-SYSTEM
+│   ├── BIDATA-SYSTEM
+│   ├── BIEXEC-DVDPLAYER
+│   ├── BIEXEC-OPENTUNA
+│   ├── BIEXEC-SYSTEM
+│   ├── BREXEC-SYSTEM
+│   ├── FORTUNA
+│   └── OPENTUNA
+├── system files
+│   ├── test.cfg
+│   ├── test.cnf
+│   ├── test.ifo
+│   ├── test.ini
+│   ├── test.sfo
+│   └── test.sys
+├── text
+│   ├── test.doc
+│   ├── test.docx
+│   ├── test.md
+│   ├── test.mht
+│   ├── test.nfo
+│   ├── test.pdf
+│   ├── test.rtf
+│   └── test.txt
+├── unknown files
+│   ├── test
+│   └── test.unknown
+├── video
+│   ├── subtitles
+│   │   ├── test.ass
+│   │   ├── test.saa
+│   │   ├── test.sbv
+│   │   ├── test.srt
+│   │   ├── test.sub
+│   │   ├── test.ttml
+│   │   └── test.vtt
+│   ├── test.3gp
+│   ├── test.avi
+│   ├── test.bik
+│   ├── test.divx
+│   ├── test.flv
+│   ├── test.gvi
+│   ├── test.m2ts
+│   ├── test.m4p
+│   ├── test.mkv
+│   ├── test.mov
+│   ├── test.mp1
+│   ├── test.mp2
+│   ├── test.mp4
+│   ├── test.mpc
+│   ├── test.mpeg
+│   ├── test.mpg
+│   ├── test.mts
+│   ├── test.pss
+│   ├── test.qt
+│   ├── test.rm
+│   ├── test.rmvb
+│   ├── test.ts
+│   ├── test.vob
+│   ├── test.webm
+│   ├── test.wmv
+│   ├── test.xmv
+│   └── test.xvid
+├── vmc other
+│   ├── test.dcm
+│   ├── test.dsv
+│   ├── test.eep
+│   ├── test.gcp
+│   ├── test.mpk
+│   └── test.vmu
+├── vmc ps1
+│   ├── test.ddf
+│   ├── test.gme
+│   ├── test.mc1
+│   ├── test.mcr
+│   ├── test.vgs
+│   ├── test.vm1
+│   ├── test.vmc
+│   └── test.vmp
+├── vmc ps2
+│   ├── test.mc2
+│   ├── test.mcd
+│   ├── test.ps2
+│   ├── test.vm2
+│   └── test.vme
+└── web
+    ├── test.htm
+    ├── test.html
+    ├── test.xhtml
+    └── test.xml
+
+48 directories, 265 files

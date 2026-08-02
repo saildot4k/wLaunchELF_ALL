@@ -6,6 +6,7 @@
 #include "filer_actions.h"
 #include "filer_shared.h"
 #include "gui_hdd0_format.h"
+#include "gui_icons.h"
 #include "init.h"
 
 #define SOURCE_DEVICE_WAIT_INTERVAL_MS 1000
@@ -977,7 +978,6 @@ int getFilePath(char *out, int cnfmode)
 	int usb_unit;
 	int event, post_event = 0;
 	int font_height;
-	int iconbase, iconcolr;
 
 	elisa_failed = FALSE;  //set at failure to load font, cleared at each browser entry
 
@@ -1727,36 +1727,12 @@ int getFilePath(char *out, int cnfmode)
 					if (marks[top + i])
 						drawChar('*', x - 6, y, setting->color[COLOR_TEXT]);
 				} else {  //if Icons must be used in front of file/folder names
-					if (files[top + i].stats.AttrFile & sceMcFileAttrSubdir) {
-						iconbase = ICON_FOLDER;
-						iconcolr = COLOR_GRAPH1;
-					} else {
-						iconbase = ICON_FILE;
-						if (genCmpFileExt(files[top + i].name, "ELF"))
-							iconcolr = COLOR_GRAPH2;
-						else if (
-									genCmpFileExt(files[top + i].name, "TXT") || 
-									genCmpFileExt(files[top + i].name, "CFG") || 
-									genCmpFileExt(files[top + i].name, "CNF") || 
-									genCmpFileExt(files[top + i].name, "INI") || 
-									genCmpFileExt(files[top + i].name, "CHT") || 
-									genCmpFileExt(files[top + i].name, "PBT") ||
-									genCmpFileExt(files[top + i].name, "JS") ||
-									genCmpFileExt(files[top + i].name, "LUA") ||
-									genCmpFileExt(files[top + i].name, "XML") ||
-									genCmpFileExt(files[top + i].name, "TOML") ||
-									genCmpFileExt(files[top + i].name, "YAML") ||
-									genCmpFileExt(files[top + i].name, "YML") ||
-									genCmpFileExt(files[top + i].name, "ARG")
-									)
-							iconcolr = COLOR_GRAPH4;
-						else
-							iconcolr = COLOR_GRAPH3;
-					}
-					if (marks[top + i])
-						iconbase += 2;
-					drawChar(iconbase, x - 3 - FONT_WIDTH, y, setting->color[iconcolr]);
-					drawChar(iconbase + 1, x - 3, y, setting->color[iconcolr]);
+					GuiLegacyFontIcon icon = guiLegacyFontIconForGuiIcon(
+					    guiIconForFileEntry(path, &files[top + i]),
+					    marks[top + i]);
+
+					drawChar(icon.iconbase, x - 3 - FONT_WIDTH, y, setting->color[icon.color_id]);
+					drawChar(icon.iconbase + 1, x - 3, y, setting->color[icon.color_id]);
 				}
 				y += font_height;
 			}                             //ends for, so all browser rows were fixed above

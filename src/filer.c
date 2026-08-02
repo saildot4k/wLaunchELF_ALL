@@ -4,6 +4,7 @@
 #include "launchelf.h"
 #include "filer_copy.h"
 #include "gui_hdd0_format.h"
+#include "gui_icons.h"
 #include "gui_sort.h"
 #include "filer_shared.h"
 #include "filer_internal.h"
@@ -1890,6 +1891,7 @@ int setFileList(const char *path, const char *ext, FILEINFO *files, int cnfmode)
 			sort(&files[1], 0, nfiles - 2);
 		//-- End case for normal folder with file/folder links --
 	}
+	guiIconPrimeDirectory(path, files, nfiles);
 	return nfiles;
 }
 //------------------------------
