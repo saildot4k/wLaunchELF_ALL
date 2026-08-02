@@ -3,6 +3,14 @@
 
 #include "gui_icons.h"
 
+/* Higher Z values render in front when the GS depth test is enabled. */
+typedef enum {
+	GUI_Z_BACKGROUND = 0,
+	GUI_Z_CONTENT = 1,
+	GUI_Z_PROMPT = 2,
+	GUI_Z_DIALOG = 3,
+} GuiZLayer;
+
 void guiAssetsUpload(void);
 void guiAssetsInvalidate(void);
 int guiAssetsReady(void);

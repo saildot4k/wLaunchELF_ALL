@@ -67,7 +67,8 @@ int guiAssetsReady(void)
 
 static int guiDrawTexture(GSTEXTURE *texture,
                           int src_x, int src_y, int src_w, int src_h,
-                          int dst_x, int dst_y, int dst_w, int dst_h)
+                          int dst_x, int dst_y, int dst_w, int dst_h,
+                          GuiZLayer z)
 {
 	int prev_alpha_enable;
 
@@ -79,7 +80,7 @@ static int guiDrawTexture(GSTEXTURE *texture,
 	gsKit_prim_sprite_texture(gsGlobal, texture,
 	                          dst_x, dst_y, src_x, src_y,
 	                          dst_x + dst_w, dst_y + dst_h, src_x + src_w, src_y + src_h,
-	                          1, GUI_TEXTURE_COLOR);
+	                          z, GUI_TEXTURE_COLOR);
 	gsGlobal->PrimAlphaEnable = prev_alpha_enable;
 
 	updateScr_1 = 1;
@@ -90,7 +91,8 @@ int guiDrawBackground(void)
 {
 	return guiDrawTexture(&gui_bg_texture,
 	                      0, 0, GUI_BG_WIDTH, GUI_BG_HEIGHT,
-	                      0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	                      0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+	                      GUI_Z_BACKGROUND);
 }
 
 int guiDrawSplash(void)
@@ -105,7 +107,8 @@ int guiDrawSplash(void)
 
 	return guiDrawTexture(&gui_splash_texture,
 	                      0, 0, GUI_SPLASH_WIDTH, GUI_SPLASH_HEIGHT,
-	                      x, y, GUI_SPLASH_WIDTH, GUI_SPLASH_HEIGHT);
+	                      x, y, GUI_SPLASH_WIDTH, GUI_SPLASH_HEIGHT,
+	                      GUI_Z_DIALOG);
 }
 
 int guiDrawFileIcon(GuiIconId icon_id, int x, int y)
@@ -120,5 +123,6 @@ int guiDrawFileIcon(GuiIconId icon_id, int x, int y)
 
 	return guiDrawTexture(&gui_icons_texture,
 	                      src_x, src_y, GUI_ICON_WIDTH, GUI_ICON_HEIGHT,
-	                      x, y, GUI_ICON_WIDTH, GUI_ICON_HEIGHT);
+	                      x, y, GUI_ICON_WIDTH, GUI_ICON_HEIGHT,
+	                      GUI_Z_CONTENT);
 }

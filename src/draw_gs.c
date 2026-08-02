@@ -86,7 +86,8 @@ void setupGS(void)
 	// Buffer Init
 	gsGlobal->PrimAAEnable = GS_SETTING_ON;
 	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
-	gsGlobal->ZBuffering = GS_SETTING_OFF;
+	gsGlobal->PSMZ = GS_PSMZ_16S;
+	gsGlobal->ZBuffering = GS_SETTING_ON;
 
 	// DMAC Init
 	dmaKit_init(D_CTRL_RELE_OFF, D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC, D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
@@ -94,6 +95,7 @@ void setupGS(void)
 
 	// Screen Init (will also clear screen once)
 	gsKit_init_screen(gsGlobal);
+	gsKit_set_test(gsGlobal, GS_ZTEST_ON);
 
 	// Screen Position Init
 	initScreenParams();
@@ -139,6 +141,7 @@ void updateScreenMode(void)
 	if (setGS_flag) {
 		// Init screen modes
 		gsKit_init_screen(gsGlobal);
+		gsKit_set_test(gsGlobal, GS_ZTEST_ON);
 		guiAssetsInvalidate();
 	}
 

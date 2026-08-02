@@ -96,12 +96,12 @@ void setScrTmp(const char *msg0, const char *msg1)
 //--------------------------------------------------------------
 void drawSprite(u64 color, int x1, int y1, int x2, int y2)
 {
-	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, 0, color);
+	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, GUI_Z_CONTENT, color);
 }
 //--------------------------------------------------------------
 void drawPopSprite(u64 color, int x1, int y1, int x2, int y2)
 {
-	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, 0, color);
+	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, GUI_Z_CONTENT, color);
 }
 //--------------------------------------------------------------
 //drawOpSprite exists only to eliminate the use of primitive sprite functions
@@ -112,7 +112,7 @@ void drawPopSprite(u64 color, int x1, int y1, int x2, int y2)
 //
 void drawOpSprite(u64 color, int x1, int y1, int x2, int y2)
 {
-	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, 0, color);
+	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y2, GUI_Z_CONTENT, color);
 }
 //--------------------------------------------------------------
 void drawMsg(const char *msg)
@@ -164,10 +164,11 @@ void loadIcon(void)
 //--------------------------------------------------------------
 void clrScr(u64 color)
 {
-	if (setting != NULL && color == setting->color[COLOR_BACKGR] && guiDrawBackground())
-		return;
+	gsKit_clear(gsGlobal, color);
+	updateScr_1 = 1;
 
-	gsKit_prim_sprite(gsGlobal, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, color);
+	if (setting != NULL && color == setting->color[COLOR_BACKGR])
+		guiDrawBackground();
 }
 
 //--------------------------------------------------------------
@@ -191,16 +192,16 @@ void drawFrame(int x1, int y1, int x2, int y2, u64 color)
 	updateScr_1 = 1;
 
 	//Top horizontal edge
-	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y1 + LINE_THICKNESS - 1, 1, color);
+	gsKit_prim_sprite(gsGlobal, x1, y1, x2, y1 + LINE_THICKNESS - 1, GUI_Z_CONTENT, color);
 
 	//Bottom horizontal
-	gsKit_prim_sprite(gsGlobal, x1, y2 - LINE_THICKNESS + 1, x2, y2, 1, color);
+	gsKit_prim_sprite(gsGlobal, x1, y2 - LINE_THICKNESS + 1, x2, y2, GUI_Z_CONTENT, color);
 
 	//Left vertical edge
-	gsKit_prim_sprite(gsGlobal, x1, y1, x1 + LINE_THICKNESS - 1, y2, 1, color);
+	gsKit_prim_sprite(gsGlobal, x1, y1, x1 + LINE_THICKNESS - 1, y2, GUI_Z_CONTENT, color);
 
 	//Right vertical edge
-	gsKit_prim_sprite(gsGlobal, x2 - LINE_THICKNESS + 1, y1, x2, y2, 1, color);
+	gsKit_prim_sprite(gsGlobal, x2 - LINE_THICKNESS + 1, y1, x2, y2, GUI_Z_CONTENT, color);
 }
 
 //--------------------------------------------------------------
