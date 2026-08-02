@@ -92,7 +92,7 @@ void setScrTmp(const char *msg0, const char *msg1)
 		drawFrame(SCREEN_MARGIN, Frame_start_y,
 		          SCREEN_WIDTH - SCREEN_MARGIN, Frame_end_y, setting->color[COLOR_FRAME]);
 
-	printXY(msg1, x, Menu_tooltip_y, setting->color[COLOR_SELECT], TRUE, 0);
+	printXYNoButtonHintColons(msg1, x, Menu_tooltip_y, setting->color[COLOR_SELECT], TRUE, 0);
 }
 //--------------------------------------------------------------
 void drawSprite(u64 color, int x1, int y1, int x2, int y2)

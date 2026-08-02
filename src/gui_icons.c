@@ -169,6 +169,8 @@ static int isSystemDirectoryName(const char *name)
 	    "BAEXEC-DVDPLAYER",
 	    "BAEXEC-OPENTUNA",
 	    "BAEXEC-SYSTEM",
+	    "BCDATA-SYSTEM",
+	    "BCEXEC-SYSTEM",
 	    "BEDATA-SYSTEM",
 	    "BEEXEC-DVDPLAYER",
 	    "BEEXEC-OPENTUNA",
@@ -177,14 +179,25 @@ static int isSystemDirectoryName(const char *name)
 	    "BIEXEC-DVDPLAYER",
 	    "BIEXEC-OPENTUNA",
 	    "BIEXEC-SYSTEM",
+	    "BM",
+	    "BOOT",
 	    "BREXEC-SYSTEM",
 	    "FORTUNA",
+	    "MATRIX",
 	    "OPENTUNA",
+	    "SYS-CONF",
+	    "TOXIC",
 	    NULL};
 	int i;
 
 	if (name == NULL || !strcmp(name, ".."))
 		return FALSE;
+	if (strlen(name) >= 4 &&
+	    wle_ascii_tolower((unsigned char)name[0]) == 's' &&
+	    wle_ascii_tolower((unsigned char)name[1]) == 'y' &&
+	    wle_ascii_tolower((unsigned char)name[2]) == 's' &&
+	    name[3] == '_')
+		return TRUE;
 	for (i = 0; system_dirs[i] != NULL; i++) {
 		if (!stricmp(name, system_dirs[i]))
 			return TRUE;

@@ -1607,20 +1607,20 @@ int getFilePath(char *out, int cnfmode)
 		}  //ends if(browser_cd)
 		if (!strncmp(path, "cdfs", 4))
 			uLE_cdStop();
-		if (top > browser_nfiles - rows)
-			top = browser_nfiles - rows;
-		if (top < 0)
-			top = 0;
 		if (browser_sel >= browser_nfiles)
 			browser_sel = browser_nfiles - 1;
 		if (browser_sel < 0)
 			browser_sel = 0;
 		if (browser_nfiles > 0)
 			skipRootSpacerSelection(path, files, browser_nfiles, &browser_sel, 1);
-		if (browser_sel >= top + rows)
-			top = browser_sel - rows + 1;
-		if (browser_sel < top)
-			top = browser_sel;
+		if (browser_nfiles > rows) {
+			top = browser_sel - rows / 2;
+			if (top < 0)
+				top = 0;
+			else if (top > browser_nfiles - rows)
+				top = browser_nfiles - rows;
+		} else
+			top = 0;
 
 		if (event || post_event) {  //NB: We need to update two frame buffers per event
 
@@ -1742,7 +1742,7 @@ int getFilePath(char *out, int cnfmode)
 				} else {  //if Icons must be used in front of file/folder names
 					GuiIconId icon_id = guiIconForFileEntry(path, &files[top + i]);
 
-					if (texture_icons && guiDrawFileIcon(icon_id, x - 1 - FONT_WIDTH, y)) {
+					if (texture_icons && guiDrawFileIcon(icon_id, x + 1 - FONT_WIDTH, y)) {
 						if (marks[top + i])
 							drawChar('*', x - 3 - 2 * FONT_WIDTH, y, setting->color[COLOR_TEXT]);
 					} else {

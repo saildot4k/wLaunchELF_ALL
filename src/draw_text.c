@@ -203,7 +203,7 @@ void drawChar2(int n, int x, int y, u64 colour)
 		}
 	}
 }
-int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
+static int printXYInternal(const char *s, int x, int y, u64 colour, int draw, int space, int omit_button_hint_colons)
 {
 	unsigned int c1, c2;
 	GuiButtonId button_id;
@@ -228,6 +228,8 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
 			    drawGuiButtonHint(button_id, x, y, draw)) {
 				x += guiButtonDrawWidth(button_id);
 				i += button_length - 1;
+				if (omit_button_hint_colons && s[i] == ':')
+					i++;
 				if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
 					break;
 				continue;
@@ -247,6 +249,8 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
 		button_id = guiButtonForLegacyHint(c2);
 		if (button_id != GUI_BUTTON_COUNT && drawGuiButtonHint(button_id, x, y, draw)) {
 			x += guiButtonDrawWidth(button_id);
+			if (omit_button_hint_colons && s[i] == ':')
+				i++;
 			if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
 				break;
 			continue;
@@ -264,8 +268,18 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
 			if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
 				break;
 		}
+		if (omit_button_hint_colons && s[i] == ':')
+			i++;
 	}  // ends while(1)
 	return x;
+}
+int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
+{
+	return printXYInternal(s, x, y, colour, draw, space, FALSE);
+}
+int printXYNoButtonHintColons(const char *s, int x, int y, u64 colour, int draw, int space)
+{
+	return printXYInternal(s, x, y, colour, draw, space, TRUE);
 }
 int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 {
