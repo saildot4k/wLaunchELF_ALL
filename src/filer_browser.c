@@ -1792,8 +1792,8 @@ int getFilePath(char *out, int cnfmode)
 				             SCREEN_WIDTH - SCREEN_MARGIN - LINE_THICKNESS * 2, (y1 + Menu_start_y - 4));
 			}                  //ends clause for scrollbar
 			if (nclipFiles) {  //if Something in clipboard, emulate LED indicator
-				u64 LED_colour, RIM_colour = GS_SETREG_RGBA(0, 0, 0, 0);
-				int RIM_w = 4, LED_w = 6, indicator_w = LED_w + 2 * RIM_w;
+				u64 LED_colour;
+				int indicator_margin = 4, LED_w = 6, indicator_w = LED_w + 2 * indicator_margin;
 				int x2 = SCREEN_WIDTH - SCREEN_MARGIN - 2, x1 = x2 - indicator_w;
 				int y1 = Frame_start_y + 2, y2 = y1 + indicator_w;
 
@@ -1801,8 +1801,8 @@ int getFilePath(char *out, int cnfmode)
 					LED_colour = GS_SETREG_RGBA(0xC0, 0, 0, 0);  //Red LED == CUT
 				else
 					LED_colour = GS_SETREG_RGBA(0, 0xC0, 0, 0);  //Green LED == COPY
-				drawOpSprite(RIM_colour, x1, y1, x2, y2);
-				drawOpSprite(LED_colour, x1 + RIM_w, y1 + RIM_w, x2 - RIM_w, y2 - RIM_w);
+				drawOpSprite(LED_colour, x1 + indicator_margin, y1 + indicator_margin,
+				             x2 - indicator_margin, y2 - indicator_margin);
 			}  //ends clause for clipboard indicator
 				if (browser_pushed) {
 					char display_path[MAX_PATH];

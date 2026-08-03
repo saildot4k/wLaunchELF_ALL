@@ -6,6 +6,7 @@
 #define GUI_BG_HEIGHT 256
 #define GUI_SPLASH_WIDTH 512
 #define GUI_SPLASH_HEIGHT 256
+#define GUI_SPLASH_VISUAL_CENTER_Y 76
 #define GUI_ICON_WIDTH 32
 #define GUI_ICON_HEIGHT 16
 #define GUI_ICON_ATLAS_COLUMNS 8
@@ -139,7 +140,7 @@ int guiDrawBackgroundRegion(int x1, int y1, int x2, int y2, GuiZLayer z)
 int guiDrawSplash(void)
 {
 	int x = (SCREEN_WIDTH - GUI_SPLASH_WIDTH) / 2;
-	int y = (SCREEN_HEIGHT - GUI_SPLASH_HEIGHT) / 2;
+	int y = SCREEN_HEIGHT / 2 - GUI_SPLASH_VISUAL_CENTER_Y;
 
 	if (x < 0)
 		x = 0;
