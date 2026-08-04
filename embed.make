@@ -32,7 +32,10 @@ XFROMMAN_SOURCE = iop/__precompiled/xfromman.irx
 XFORMSERV_SOURCE = $(PS2SDK)/iop/irx/xfromserv.irx
 CCMODMAN_SOURCE = iop/__precompiled/ccmodman.irx
 CCDRIVER_SOURCE = iop/__precompiled/ccdriver.irx
+CCRPC_SOURCE = iop/__precompiled/ccrpc.irx
 DFFS_SOURCE = iop/__precompiled/dffs.irx
+IOPMAN_SOURCE = iop/__generated/iopman.irx
+IOPMAN_N2E_SOURCE = iop/__precompiled/iopman.n2e
 SECRSIF_SOURCE = $(PS2SDK)/iop/irx/secrsif.irx
 EXPLOIT_IOPRP_SOURCE := exploits/IOPRP_LTS.IMG
 ifeq ($(wildcard $(SECRSIF_SOURCE)),)
@@ -59,6 +62,13 @@ ifeq ($(XFROM),1)
 endif
 ifeq ($(DFFS),1)
   ifeq ($(DFFS_LOAD_RECOVERED),1)
+    ifeq ($(DFFS_LOAD_IOPMAN),1)
+      ifeq ($(wildcard $(IOPMAN_SOURCE)),)
+        ifeq ($(wildcard $(IOPMAN_N2E_SOURCE)),)
+          $(error Missing iopman.n2e. Download Crystal-Chip-R34-v6/SRC/IOPMAN.N2E to iop/__precompiled/iopman.n2e or build with DFFS_LOAD_IOPMAN=0)
+        endif
+      endif
+    endif
     ifeq ($(DFFS_LOAD_CCMODMAN),1)
       ifeq ($(wildcard $(CCMODMAN_SOURCE)),)
         $(error Missing ccmodman.irx. Extract it to iop/__precompiled/ccmodman.irx or build with DFFS_LOAD_CCMODMAN=0)
@@ -67,6 +77,11 @@ ifeq ($(DFFS),1)
     ifeq ($(DFFS_LOAD_CCDRIVER),1)
       ifeq ($(wildcard $(CCDRIVER_SOURCE)),)
         $(error Missing ccdriver.irx. Extract it to iop/__precompiled/ccdriver.irx or build with DFFS_LOAD_CCDRIVER=0)
+      endif
+    endif
+    ifeq ($(DFFS_LOAD_CCRPC),1)
+      ifeq ($(wildcard $(CCRPC_SOURCE)),)
+        $(error Missing ccrpc.irx. Extract it to iop/__precompiled/ccrpc.irx or build with DFFS_LOAD_CCRPC=0)
       endif
     endif
     ifeq ($(wildcard $(DFFS_SOURCE)),)
@@ -408,6 +423,15 @@ $(EE_ASM_DIR)ccmodman_irx.s: $(CCMODMAN_SOURCE) | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)ccdriver_irx.s: $(CCDRIVER_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ ccdriver_irx
+
+$(EE_ASM_DIR)ccrpc_irx.s: $(CCRPC_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ ccrpc_irx
+
+$(IOPMAN_SOURCE): $(IOPMAN_N2E_SOURCE) tools/n2e_unpack.py | iop/__generated
+	python3 tools/n2e_unpack.py $< $@
+
+$(EE_ASM_DIR)iopman_irx.s: $(IOPMAN_SOURCE) | $(EE_ASM_DIR)
+	$(BIN2S) $< $@ iopman_irx
 
 $(EE_ASM_DIR)dffs_irx.s: $(DFFS_SOURCE) | $(EE_ASM_DIR)
 	$(BIN2S) $< $@ dffs_irx

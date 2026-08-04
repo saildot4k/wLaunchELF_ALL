@@ -14,17 +14,27 @@ access. The practical filesystem stack is:
 | Module | Recovered file | SHA-256 | Purpose |
 |---|---|---|---|
 | `modman` | `iop/__precompiled/ccmodman.irx` | `398f0b24f4fb430ff426b4c4f9c86e4fd66ae4275da5ac1f5f7ebbc7fa4843f3` | Crystal Chip BootManager support module that references DFFS modules and device paths |
-| `CrystalChipDriver` | `iop/__precompiled/ccdriver.irx` | `45def2973dbaa060fcb9423464d4bfbd5d5f3e583fd74eabd39a4a48a8075eda` | Low-level Crystal Chip flash driver |
-| `DataFlashFS` | `iop/__precompiled/dffs.irx` | `29b0179ef589cc707cb7c0640060ab9ec2696c3e249111cc99f4ef9087d3940c` | IOMAN filesystem driver registering `dffs` |
+| `CrystalChipDriver` | `iop/__precompiled/ccdriver.irx` | `fce71823295a13f737856b056d2a638e3df1044d22e16fb87a4e9bba21518028` | Low-level Crystal Chip flash driver |
+| `ccrpc` | `iop/__precompiled/ccrpc.irx` | `97f6f40f9f5409daa7e53ccbbb89cb8d470018783a05b47ef9e0a245e335d040` | Crystal Chip RPC service used by BootManager, not required by `DataFlashFS` |
+| `DataFlashFS` | `iop/__precompiled/dffs.irx` | `5bed54983a9a09a1bdf121ed4957e3eafd1b82198b6bb11e3f6a0eacd6329380` | IOMAN filesystem driver registering `dffs` |
 
-In the unpacked BootManager ELF used for recovery, the unique embedded module
-extents were:
+The original quick recovery found short inner ELF images that omitted the
+relocation data needed by a normal module loader:
 
 | Module | ELF offset | Size |
 |---|---:|---:|
 | `modman` | `0x235d20` | `12596` bytes |
 | `CrystalChipDriver` | `0x2391a0` | `9056` bytes |
 | `DataFlashFS` | `0x23c120` | `21036` bytes |
+
+The BootManager direct EE loader uses larger buffers whose size word lives just
+before each buffer. Those are the buffers now checked in for direct load tests:
+
+| Module | BM2 buffer offset | Size word | SHA-256 |
+|---|---:|---:|---|
+| `CrystalChipDriver` | `0x24df30` | `0x2f69` | `fce71823295a13f737856b056d2a638e3df1044d22e16fb87a4e9bba21518028` |
+| `ccrpc` | `0x250eb0` | `0x0929` | `97f6f40f9f5409daa7e53ccbbb89cb8d470018783a05b47ef9e0a245e335d040` |
+| `DataFlashFS` | `0x2517f0` | `0x648d` | `5bed54983a9a09a1bdf121ed4957e3eafd1b82198b6bb11e3f6a0eacd6329380` |
 
 `modman` imports `loadcore`, `modload`, `sysmem`, `stdio`, `sifcmd`,
 `sysclib`, `thbase`, and `ioman`. Its string table includes
@@ -42,6 +52,10 @@ Raw IRX import/export table inspection shows that `DataFlashFS` imports three
 functions from the `ccdriver` library by ordinal: `5`, `13`, and `14`.
 `CrystalChipDriver` exports the 8-byte library name `ccdriver`, matching those
 imports.
+
+`ccrpc` imports many `ccdriver` ordinals, but `DataFlashFS` does not import
+`ccrpc`. That makes `ccrpc` a BootManager service compatibility test, not a
+base filesystem requirement.
 
 ## Filesystem Behavior
 
@@ -100,8 +114,11 @@ The load sequence is configurable for hardware experiments:
 
 | GitHub Actions `dffs_mode` | Driver load behavior | Purpose |
 |---|---|---|
-| `Full recovered stack - ccmodman, ccdriver, dffs` | Load `ccmodman`, `ccdriver`, then `dffs` | Full recovered BootManager-like sequence |
-| `Skip ccdriver - ccmodman, dffs` | Load `ccmodman`, then `dffs` | Test whether `modman` or firmware already supplies `ccdriver` |
+| `Full recovered stack - ccmodman, ccdriver, dffs` | Load `ccmodman`, `ccdriver`, then `dffs` after IOP reset | Original recovered order; known to reach and hang at `dffs ccdriver` on test hardware |
+| `Skip ccdriver - ccmodman, dffs` | Load `ccmodman`, then `dffs` after IOP reset | Test whether `modman` supplies or reloads `ccdriver` without direct EE-side `ccdriver` startup |
+| `Firmware iopman - iopman, dffs` | Load unpacked firmware `iopman`, then `dffs` after IOP reset | Test the firmware wrapper module recovered from `IOPMAN.N2E` |
+| `BootManager order - ccdriver, ccrpc, dffs` | Load full BM2 `ccdriver`, `ccrpc`, then `dffs` after IOP reset | Closest direct EE-side match to BM2's recovered module order |
+| `DataFlashFS only - reset IOP, load dffs` | Load only `dffs` after IOP reset | Control test for whether a resident `ccdriver` exists after the normal wLaunchELF IOP stack |
 | `DataFlashFS only - preserve IOP, load dffs` | Do not reset IOP; load only `dffs` | Test whether BootManager left `ccdriver` resident |
 | `Probe only - preserve IOP, load nothing` | Do not reset IOP or start recovered DFFS modules; only probe existing `dffs:` | Test whether BootManager left the whole DFFS stack resident |
 | `DFFS disabled` | Build without `dffs:/` support | Disable DFFS integration |
@@ -112,8 +129,24 @@ Equivalent make flags:
 |---|---|---|
 | `DFFS_LOAD_RECOVERED=1` | Load `ccmodman`, `ccdriver`, then `dffs` | Full recovered BootManager-like sequence |
 | `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCDRIVER=0` | Load `ccmodman`, then `dffs` | Test whether `modman` or firmware already supplies `ccdriver` |
+| `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_IOPMAN=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0` | Load firmware `iopman`, then `dffs` | Test the official firmware wrapper after normal IOP startup |
+| `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=1 DFFS_LOAD_CCRPC=1` | Load BM2 direct order: `ccdriver`, `ccrpc`, then `dffs` | Test whether BootManager's direct runtime stack is order-sensitive |
+| `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1` | Load only `dffs` after reset | Control test; expected to fail unless `ccdriver` is already resident |
 | `DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=0` | Load only `dffs` after preserving the current IOP | Test whether BootManager left `ccdriver` resident |
 | `DFFS_LOAD_RECOVERED=0 IOP_RESET=0` | Do not start recovered DFFS modules; only probe existing `dffs:` | Test whether BootManager left the whole DFFS stack resident |
+
+Current hardware results:
+
+- `DataFlashFS only - preserve IOP, load dffs` did not reach the main page.
+- `Probe only - preserve IOP, load nothing` did not reach the main page.
+- `DataFlashFS only - reset IOP, load dffs` reached `Loading dffs fs drivers`
+  and hung.
+- `Full recovered stack - ccmodman, ccdriver, dffs` reached
+  `Loading dffs ccdriver drivers` and hung.
+
+Those results make a simple "preserve BootManager's IOP" approach unlikely.
+The strongest remaining software paths are to retest the full BM2-sized buffers
+and then replace `ccdriver` with a bounded, non-destructive implementation.
 
 Access uses the existing generic `fileXio` operations for directory listing,
 file open/read/write, mkdir, remove, rename, and recursive copy. The generic

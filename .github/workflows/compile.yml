@@ -12,6 +12,8 @@ on:
         options:
           - "Full recovered stack - ccmodman, ccdriver, dffs"
           - "Skip ccdriver - ccmodman, dffs"
+          - "Firmware iopman - iopman, dffs"
+          - "BootManager order - ccdriver, ccrpc, dffs"
           - "DataFlashFS only - reset IOP, load dffs"
           - "DataFlashFS only - preserve IOP, load dffs"
           - "Probe only - preserve IOP, load nothing"
@@ -48,10 +50,10 @@ jobs:
     - name: Install dependencies
       run: |
         if command -v apk >/dev/null 2>&1; then
-          apk add --no-cache make git zip gcc musl-dev gmp mpfr4 mpc1
+          apk add --no-cache make git zip gcc musl-dev gmp mpfr4 mpc1 python3 curl
         elif command -v apt-get >/dev/null 2>&1; then
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y make git zip gcc libc6-dev libgmp10 libmpfr6 libmpc3
+          DEBIAN_FRONTEND=noninteractive apt-get install -y make git zip gcc libc6-dev libgmp10 libmpfr6 libmpc3 python3 curl
         else
           echo "No supported package manager found for dependency install." >&2
           exit 1
@@ -101,6 +103,12 @@ jobs:
           "Skip ccdriver - ccmodman, dffs")
             DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=1 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
             ;;
+          "Firmware iopman - iopman, dffs")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_IOPMAN=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
+            ;;
+          "BootManager order - ccdriver, ccrpc, dffs")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_IOPMAN=0 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=1 DFFS_LOAD_CCRPC=1 IOP_RESET=1"
+            ;;
           "DataFlashFS only - reset IOP, load dffs")
             DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
             ;;
@@ -120,6 +128,14 @@ jobs:
         esac
         echo "Resolved make flags: $FLAGS"
         echo "DFFS make flags: $DFFS_FLAGS"
+        if printf '%s\n' "$DFFS_FLAGS" | grep -q 'DFFS_LOAD_IOPMAN=1'; then
+          mkdir -p iop/__precompiled iop/__generated
+          curl -fL -o iop/__precompiled/iopman.n2e \
+            https://raw.githubusercontent.com/saildot4k/Crystal-Chip-R34-v6/v6/SRC/IOPMAN.N2E
+          python3 tools/n2e_unpack.py iop/__precompiled/iopman.n2e iop/__generated/iopman.irx
+          echo "Recovered firmware iopman:"
+          sha256sum iop/__generated/iopman.irx
+        fi
         make rebuild $FLAGS $DFFS_FLAGS ${{ github.event.inputs.make_args }}
 
     - name: Verify loader low-memory layout guard

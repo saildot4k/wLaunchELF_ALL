@@ -75,6 +75,12 @@ IMPORT_BIN2C(ccmodman_irx);
 #ifdef DFFS_LOAD_CCDRIVER
 IMPORT_BIN2C(ccdriver_irx);
 #endif
+#ifdef DFFS_LOAD_CCRPC
+IMPORT_BIN2C(ccrpc_irx);
+#endif
+#ifdef DFFS_LOAD_IOPMAN
+IMPORT_BIN2C(iopman_irx);
+#endif
 #ifdef DFFS_LOAD_RECOVERED
 IMPORT_BIN2C(dffs_irx);
 #endif
@@ -154,6 +160,12 @@ static u8 have_ccmodman = 0;
 #endif
 #ifdef DFFS_LOAD_CCDRIVER
 static u8 have_ccdriver = 0;
+#endif
+#ifdef DFFS_LOAD_CCRPC
+static u8 have_ccrpc = 0;
+#endif
+#ifdef DFFS_LOAD_IOPMAN
+static u8 have_iopman = 0;
 #endif
 static u8 have_DFFS_modules = 0;
 #endif
@@ -715,11 +727,38 @@ int loadDffsModules(void)
 #ifdef DFFS_LOAD_CCDRIVER
 		have_ccdriver = 1;
 #endif
+#ifdef DFFS_LOAD_CCRPC
+		have_ccrpc = 1;
+#endif
+#ifdef DFFS_LOAD_IOPMAN
+		have_iopman = 1;
+#endif
 		have_DFFS_modules = 1;
 		return 1;
 	}
 
 #ifdef DFFS_LOAD_RECOVERED
+#ifdef DFFS_LOAD_IOPMAN
+	if (!have_iopman) {
+		showLoadingModulesMsg("dffs iopman");
+		id = SifExecModuleBuffer(iopman_irx, size_iopman_irx, 0, NULL, &ret);
+		DPRINTF(" [IOPMAN]: id=%d ret=%d\n", id, ret);
+		have_iopman = (id >= 0 && ret >= 0);
+		if (!have_iopman)
+			return dffsDeviceRegistered();
+		if (dffsDeviceRegistered()) {
+#ifdef DFFS_LOAD_CCDRIVER
+			have_ccdriver = 1;
+#endif
+#ifdef DFFS_LOAD_CCRPC
+			have_ccrpc = 1;
+#endif
+			have_DFFS_modules = 1;
+			return 1;
+		}
+	}
+#endif
+
 #ifdef DFFS_LOAD_CCMODMAN
 	if (!have_ccmodman) {
 		showLoadingModulesMsg("dffs modman");
@@ -731,6 +770,9 @@ int loadDffsModules(void)
 		if (dffsDeviceRegistered()) {
 #ifdef DFFS_LOAD_CCDRIVER
 			have_ccdriver = 1;
+#endif
+#ifdef DFFS_LOAD_CCRPC
+			have_ccrpc = 1;
 #endif
 			have_DFFS_modules = 1;
 			return 1;
@@ -745,6 +787,21 @@ int loadDffsModules(void)
 		DPRINTF(" [CCDRIVER]: id=%d ret=%d\n", id, ret);
 		have_ccdriver = (id >= 0 && ret >= 0);
 		if (!have_ccdriver)
+			return dffsDeviceRegistered();
+		if (dffsDeviceRegistered()) {
+			have_DFFS_modules = 1;
+			return 1;
+		}
+	}
+#endif
+
+#ifdef DFFS_LOAD_CCRPC
+	if (!have_ccrpc) {
+		showLoadingModulesMsg("dffs ccrpc");
+		id = SifExecModuleBuffer(ccrpc_irx, size_ccrpc_irx, 0, NULL, &ret);
+		DPRINTF(" [CCRPC]: id=%d ret=%d\n", id, ret);
+		have_ccrpc = (id >= 0 && ret >= 0);
+		if (!have_ccrpc)
 			return dffsDeviceRegistered();
 		if (dffsDeviceRegistered()) {
 			have_DFFS_modules = 1;
@@ -2034,6 +2091,12 @@ static void clearIopModuleState(void)
 #endif
 #ifdef DFFS_LOAD_CCDRIVER
 	have_ccdriver = 0;
+#endif
+#ifdef DFFS_LOAD_CCRPC
+	have_ccrpc = 0;
+#endif
+#ifdef DFFS_LOAD_IOPMAN
+	have_iopman = 0;
 #endif
 	have_DFFS_modules = 0;
 #endif
