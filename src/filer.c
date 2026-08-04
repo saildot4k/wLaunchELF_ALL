@@ -1474,9 +1474,14 @@ int getDir(const char *path, FILEINFO *info)
 #endif
 #ifdef DFFS
 	else if (isDffsPath(path)) {
+		char dffs_path[MAX_PATH];
+		const char *read_path = path;
+
 		if (!loadDffsModules())
 			return 0;
-		n = readGENERICWithFirstOpenRetry(path, info, max, 750);
+		if (makeDffsDirectoryOpenPath(path, dffs_path, sizeof(dffs_path)))
+			read_path = dffs_path;
+		n = readGENERICWithFirstOpenRetry(read_path, info, max, 750);
 	}
 #endif
 	else if (!strncmp(path, "hdd", 3))

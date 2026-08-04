@@ -375,6 +375,9 @@ int uLE_cdStop(void);
 int IsSupportedFileType(char *path);
 void CleanUpForExec(void);
 int isDffsPath(const char *path);
+#ifdef DFFS
+int makeDffsDirectoryOpenPath(const char *path, char *out, size_t out_size);
+#endif
 #ifdef XFROM
 int loadFlashModules(void);
 #endif

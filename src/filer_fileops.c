@@ -212,6 +212,9 @@ limited:
 int genRmdir(char *path)
 {
 	int ret;
+#ifdef DFFS
+	char dffs_path[MAX_PATH];
+#endif
 #if FILEOP_TRACE
 	u64 t0, t1;
 	char log_path[MAX_PATH];
@@ -227,6 +230,10 @@ int genRmdir(char *path)
 		return -1;
 	ensurePathMemoryCardAccessible(path);
 	genLimObjName(path, 0);
+#ifdef DFFS
+	if (makeDffsDirectoryOpenPath(path, dffs_path, sizeof(dffs_path)))
+		path = dffs_path;
+#endif
 #if FILEOP_TRACE
 	t0 = Timer();
 #endif
@@ -281,6 +288,9 @@ int genRemove(char *path)
 int genGetStat(const char *path, iox_stat_t *stat)
 {
 	char stat_path[MAX_PATH];
+#ifdef DFFS
+	char dffs_path[MAX_PATH];
+#endif
 
 	if (path == NULL || path[0] == '\0' || stat == NULL)
 		return -1;
@@ -292,6 +302,10 @@ int genGetStat(const char *path, iox_stat_t *stat)
 #endif
 	ensurePathMemoryCardAccessible(stat_path);
 	genLimObjName(stat_path, 0);
+#ifdef DFFS
+	if (makeDffsDirectoryOpenPath(stat_path, dffs_path, sizeof(dffs_path)))
+		snprintf(stat_path, sizeof(stat_path), "%s", dffs_path);
+#endif
 	return fileXioGetStat(stat_path, stat);
 }
 //------------------------------
@@ -418,6 +432,9 @@ int genOpen(const char *path, int mode)
 int genDopen(char *path)
 {
 	int fd;
+#ifdef DFFS
+	char dffs_path[MAX_PATH];
+#endif
 #if FILEOP_TRACE
 	u64 t0, t1;
 	char req_log_path[MAX_PATH];
@@ -434,6 +451,10 @@ int genDopen(char *path)
 
 	if (!ensurePathDffsAccessible(path))
 		return -1;
+#ifdef DFFS
+	if (makeDffsDirectoryOpenPath(path, dffs_path, sizeof(dffs_path)))
+		path = dffs_path;
+#endif
 	ensurePathMemoryCardAccessible(path);
 	if (!strncmp(path, "pfs", 3) || !strncmp(path, "vmc", 3)) {
 		char tmp[MAX_PATH];

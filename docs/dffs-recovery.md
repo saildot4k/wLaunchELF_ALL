@@ -143,6 +143,8 @@ Current hardware results:
   and hung.
 - `Full recovered stack - ccmodman, ccdriver, dffs` reached
   `Loading dffs ccdriver drivers` and hung.
+- A later full-stack-style test could list `dffs:/` and showed `BM` at the
+  root, but `dffs:/BM/` appeared empty.
 
 Those results make a simple "preserve BootManager's IOP" approach unlikely.
 The strongest remaining software paths are to retest the full BM2-sized buffers
@@ -154,6 +156,13 @@ file-operation wrappers also ensure the DFFS stack is loaded before direct
 `dffs:` opens, stats, mkdirs, removes, and directory opens. Timestamp `ChStat`
 is skipped on copy, matching the treatment of other small FAT-like device
 stacks that may not implement timestamp updates.
+
+One recovered `dffs.irx` compatibility issue is now handled in wLaunchELF:
+the DFFS path resolver accepts a child directory as `/BM`, but a trailing slash
+path such as `/BM/` reaches the resolver as an empty final component inside
+`BM`. The browser stores directory paths with a trailing slash, so DFFS
+directory opens now strip the final separator for non-root paths before calling
+`fileXioDopen()`. The user-facing path remains `dffs:/BM/`.
 
 ELF launch from `dffs:/` is supported through the normal loader handoff. The
 embedded loader reads the target ELF with `SifLoadElf()` before optional IOP

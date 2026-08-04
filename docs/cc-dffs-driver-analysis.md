@@ -259,6 +259,20 @@ The initialized sector size observed in the mount path is `0x200`, so DFFS is
 effectively presenting a 512-byte-sector FAT-like volume over the Crystal Chip
 data flash geometry.
 
+## Directory Path Quirk
+
+The recovered `dffs.irx` directory-open function stores a private handle, locks
+the filesystem semaphore, then resolves the requested path through the FAT-like
+path resolver. That resolver handles `""`, `/`, and `/.` as root, but below
+root it treats a trailing separator as another component. As a result, `/BM`
+resolves to the `BM` directory entry while `/BM/` resolves into `BM` first and
+then tries to open an empty final component inside it.
+
+This matches the hardware result where `dffs:/` listed `BM`, but entering
+`dffs:/BM/` showed no contents. wLaunchELF now normalizes DFFS directory opens
+by removing trailing separators from non-root paths before calling
+`fileXioDopen()`.
+
 ## ccmodman Role
 
 `ccmodman.irx` imports `loadcore`, `modload`, `sysmem`, `sifcmd`, `sysclib`,

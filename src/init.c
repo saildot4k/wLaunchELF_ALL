@@ -695,6 +695,36 @@ int isDffsPath(const char *path)
 //endfunc isDffsPath
 //---------------------------------------------------------------------------
 #ifdef DFFS
+int makeDffsDirectoryOpenPath(const char *path, char *out, size_t out_size)
+{
+	char *colon;
+	size_t len;
+	int changed = 0;
+
+	if (path == NULL || out == NULL || out_size == 0)
+		return 0;
+
+	snprintf(out, out_size, "%s", path);
+	out[out_size - 1] = '\0';
+	if (!isDffsPath(out))
+		return 0;
+
+	colon = strchr(out, ':');
+	if (colon == NULL)
+		return 0;
+
+	while ((len = strlen(out)) > 0 && (out[len - 1] == '/' || out[len - 1] == '\\')) {
+		if (colon[1] == '\0' || ((colon[1] == '/' || colon[1] == '\\') && colon[2] == '\0'))
+			break;
+		out[len - 1] = '\0';
+		changed = 1;
+	}
+
+	return changed;
+}
+//------------------------------
+//endfunc makeDffsDirectoryOpenPath
+//---------------------------------------------------------------------------
 static int dffsDeviceRegistered(void)
 {
 	int fd;
