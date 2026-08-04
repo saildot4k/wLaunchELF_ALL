@@ -12,6 +12,7 @@ on:
         options:
           - "Full recovered stack - ccmodman, ccdriver, dffs"
           - "Skip ccdriver - ccmodman, dffs"
+          - "DataFlashFS only - reset IOP, load dffs"
           - "DataFlashFS only - preserve IOP, load dffs"
           - "Probe only - preserve IOP, load nothing"
           - "DFFS disabled"
@@ -99,6 +100,9 @@ jobs:
             ;;
           "Skip ccdriver - ccmodman, dffs")
             DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=1 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
+            ;;
+          "DataFlashFS only - reset IOP, load dffs")
+            DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=1"
             ;;
           "DataFlashFS only - preserve IOP, load dffs")
             DFFS_FLAGS="DFFS=1 DFFS_LOAD_RECOVERED=1 DFFS_LOAD_CCMODMAN=0 DFFS_LOAD_CCDRIVER=0 IOP_RESET=0"
