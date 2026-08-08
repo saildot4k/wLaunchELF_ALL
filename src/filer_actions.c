@@ -235,13 +235,21 @@ int filerConfirmExploitModify(const char *path, const FILEINFO *file)
 	return filerConfirmExploitAction(path, file, LNG(Modify));
 }
 
+static u64 filerCachedFileSize(const FILEINFO *file)
+{
+	return ((u64)file->stats.Reserve2 << 32) | file->stats.FileSizeByte;
+}
+
 u64 getFileSize(const char *path, const FILEINFO *file)
 {
 	iox_stat_t stat;
-	u64 size, filesize;
+	u64 size, filesize, cached_size;
 	FILEINFO files[MAX_ENTRY];
 	char dir[MAX_PATH], party[MAX_NAME];
 	int nfiles, i, ret;
+
+	if (path == NULL || file == NULL)
+		return (u64)-1;
 
 	if (!ensurePathDeviceStackReady(path))
 		return 0;
@@ -251,12 +259,13 @@ u64 getFileSize(const char *path, const FILEINFO *file)
 		nfiles = getDir(dir, files);
 		for (i = size = 0; i < nfiles; i++) {
 			filesize = getFileSize(dir, &files[i]);  //recurse for each object in folder
-			if (filesize < 0)
-				return -1;
+			if (filesize == (u64)-1)
+				return (u64)-1;
 			else
 				size += filesize;
 		}
 	} else {  //File object to size up
+		cached_size = filerCachedFileSize(file);
 		if (!strncmp(path, "hdd", 3)) {
 			getHddParty(path, file, party, dir);
 			ret = mountParty(party);
@@ -277,8 +286,18 @@ u64 getFileSize(const char *path, const FILEINFO *file)
 		if (!strncmp(dir, "host:/", 6))
 			makeHostPath(dir, dir);
 #endif
-		fileXioGetStat(dir, &stat);
-		size = stat.size;
+#ifdef DFFS
+		if (isDffsPath(dir))
+			size = cached_size;
+		else
+#endif
+		{
+			memset(&stat, 0, sizeof(stat));
+			if (genGetStat(dir, &stat) >= 0)
+				size = ((u64)stat.hisize << 32) | stat.size;
+			else
+				size = cached_size;
+		}
 	}
 	return size;
 }

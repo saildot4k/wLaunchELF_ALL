@@ -164,6 +164,12 @@ path such as `/BM/` reaches the resolver as an empty final component inside
 directory opens now strip the final separator for non-root paths before calling
 `fileXioDopen()`. The user-facing path remains `dffs:/BM/`.
 
+File size handling is also DFFS-specific. The recovered driver reports file
+sizes through `dread()` directory entries, but its `getstat` slot is a `-1`
+stub. For DFFS, wLaunchELF therefore treats the listed 32-bit FAT file size as
+authoritative, forces the high size word to zero, and uses cached listing sizes
+when recursively calculating folder totals.
+
 ELF launch from `dffs:/` is supported through the normal loader handoff. The
 embedded loader reads the target ELF with `SifLoadElf()` before optional IOP
 reset, so the DFFS driver only needs to be present before handoff.

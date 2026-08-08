@@ -1186,6 +1186,11 @@ int readGENERIC(const char *path, FILEINFO *info, int max)
 {
 	iox_dirent_t record;
 	int n = 0, dd = -1;
+	int is_dffs = 0;
+
+#ifdef DFFS
+	is_dffs = isDffsPath(path);
+#endif
 
 	if ((dd = fileXioDopen(path)) < 0)
 		goto exit;  //exit if error opening directory
@@ -1200,7 +1205,7 @@ int readGENERIC(const char *path, FILEINFO *info, int max)
 		} else if (FIO_S_ISREG(record.stat.mode)) {
 			info[n].stats.AttrFile = MC_ATTR_norm_file;
 			info[n].stats.FileSizeByte = record.stat.size;
-			info[n].stats.Reserve2 = record.stat.hisize;
+			info[n].stats.Reserve2 = is_dffs ? 0 : record.stat.hisize;
 		} else {
 			DPRINTF("%s:UNKNOWN_FILEMODE:('%s', 0x%x, siz:%d, attr:%d)\n", record.name, record.stat.mode, record.stat.size, record.stat.attr);
 			continue;  //Skip entry which is neither a file nor a folder

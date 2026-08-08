@@ -259,6 +259,18 @@ The initialized sector size observed in the mount path is `0x200`, so DFFS is
 effectively presenting a 512-byte-sector FAT-like volume over the Crystal Chip
 data flash geometry.
 
+## File Size Reporting
+
+The recovered `dffs.irx` is a legacy IOMAN filesystem driver. Its `dread`
+handler copies the FAT directory entry's 32-bit file-size field into
+`io_stat_t.size`, but its `getstat` and `chstat` operation slots both point at
+the same stub that returns `-1`.
+
+Practical consequence: file sizes for DFFS must come from directory enumeration
+metadata, not from a later `fileXioGetStat()` call. The DFFS volume lives on
+small Crystal Chip NOR/data flash, so the high 32-bit size field is forced to
+zero in wLaunchELF's DFFS listing path.
+
 ## Directory Path Quirk
 
 The recovered `dffs.irx` directory-open function stores a private handle, locks
