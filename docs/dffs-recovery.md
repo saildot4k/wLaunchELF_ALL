@@ -174,6 +174,11 @@ directory records, wLaunchELF also rejects non-printable DFFS names, raw-looking
 LFN records, and any DFFS file or recursive folder size above the 4 MB maximum
 Crystal Chip flash size.
 
+The same cached size is used when copying files from `dffs:/`. This avoids a
+seek-to-end/stat dependency during recursive paste, and DFFS transfers use small
+4 KB chunks plus partial-read handling so old flash-driver reads do not fail a
+copy simply because they return fewer bytes than requested in one call.
+
 ELF launch from `dffs:/` is supported through the normal loader handoff. The
 embedded loader reads the target ELF with `SifLoadElf()` before optional IOP
 reset, so the DFFS driver only needs to be present before handoff.

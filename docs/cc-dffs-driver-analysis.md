@@ -281,6 +281,12 @@ non-printable DFFS names, DFFS entries that look like raw FAT LFN records, and
 impossible DFFS file sizes before recursive folder sizing can cache a bogus
 multi-GB value.
 
+The copy path follows the same rule. For DFFS source files, wLaunchELF uses the
+cached size from the directory entry instead of seeking to the end after opening
+the file. It also keeps DFFS transfer chunks at 4 KB and accepts short positive
+reads, writing the bytes actually returned before continuing. That is safer for
+the legacy flash driver than assuming modern fileXio-style full-buffer reads.
+
 ## Directory Path Quirk
 
 The recovered `dffs.irx` directory-open function stores a private handle, locks

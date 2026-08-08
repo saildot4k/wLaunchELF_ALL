@@ -346,6 +346,9 @@ int copy(char *outPath, const char *inPath, FILEINFO file, int recurses)
 	mcT_header *mcT_head_p = (mcT_header *)&file.stats;
 	int psu_pad_size = 0, PSU_restart_f = 0;
 	char *cp, *np;
+#ifdef DFFS
+	int in_is_dffs = 0, out_is_dffs = 0;
+#endif
 #if FILEOP_TRACE
 	int trace_net_copy = 0;
 	int trace_vmc_copy = 0;
@@ -431,6 +434,11 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 #endif
 	} else
 		sprintf(out, "%s%s", outPath, newfile.name);
+
+#ifdef DFFS
+	in_is_dffs = isDffsPath(in);
+	out_is_dffs = isDffsPath(out);
+#endif
 
 	if (!strcmp(in, out))
 		return 0;  //if in and out are identical our work is done.
@@ -744,6 +752,15 @@ non_PSU_RESTORE_init:
 #endif
 				goto copy_file_exit;
 			}
+#ifdef DFFS
+			if (in_is_dffs) {
+				size = ((u64)file.stats.Reserve2 << 32) | file.stats.FileSizeByte;
+				if (size > DFFS_MAX_VOLUME_SIZE) {
+					ret = -EIO;
+					goto copy_file_exit;
+				}
+			} else
+#endif
 			{
 				s64 in_size = genLseek(in_fd, 0, SEEK_END);
 				if (in_size < 0) {
@@ -757,7 +774,10 @@ non_PSU_RESTORE_init:
 				}
 				size = (u64)in_size;
 			}
-			genLseek(in_fd, 0, SEEK_SET);
+#ifdef DFFS
+			if (!in_is_dffs)
+#endif
+				genLseek(in_fd, 0, SEEK_SET);
 		}
 
 	//Here the input file has been opened, indicated by 'in_fd'
@@ -798,6 +818,11 @@ non_PSU_RESTORE_init:
        To prevent a loss in performance, these values must each be in a multiple of the device's sector/page size.
        They must also be in multiples of 64, to prevent FILEIO from doing alignment correction in software. */
 	buffSize = COPY_BUFFER_FAST_DEFAULT;  //First assume fast-device buffer size
+#ifdef DFFS
+	if (in_is_dffs || out_is_dffs)
+		buffSize = 4096;  //DFFS is tiny NOR-backed FAT; keep transfers page/sector friendly.
+	else
+#endif
 	if (!strncmp(out, "mc", 2) || !strncmp(out, "mass", 4) || !strncmp(out, "vmc", 3))
 		buffSize = 131072;  //Use  128KB if writing to USB (Flash RAM writes) or MC (pretty slow).
 	                        //VMC contents should use the same size, as VMCs will often be stored on USB
@@ -968,7 +993,7 @@ non_PSU_RESTORE_init:
 			}
 			copyBuff = (buffIndex == 0) ? buff : buff2;
 			bytesRead = genRead(in_fd, copyBuff, buffSize);
-			bytesWritten = (bytesRead == buffSize) ? genWrite(out_fd, copyBuff, buffSize) : 0;
+			bytesWritten = (bytesRead > 0) ? genWrite(out_fd, copyBuff, bytesRead) : 0;
 #if FILEOP_TRACE
 			chunk_remaining_before = size;
 			if (trace_net_copy || trace_vmc_copy) {
@@ -977,7 +1002,7 @@ non_PSU_RESTORE_init:
 				       (unsigned long long)chunk_remaining_before);
 			}
 #endif
-			if ((bytesRead != buffSize) || (bytesWritten != buffSize)) {
+			if ((bytesRead <= 0) || (bytesWritten != bytesRead)) {
 #if FILEOP_TRACE
 				printf("[FILEOP] copy-chunk-error in=%s out=%s idx=%u req=%d read=%d write=%d remain=%llu\n",
 				       in, out, trace_chunk_index, buffSize, bytesRead, bytesWritten,
@@ -990,8 +1015,8 @@ non_PSU_RESTORE_init:
 				ret = -EIO;  // flag generic I/O error
 				goto copy_file_exit;
 			}
-			size -= buffSize;
-			written_size += buffSize;
+			size -= bytesRead;
+			written_size += bytesRead;
 			if (buffCount > 1)
 				buffIndex ^= 1;
 #if FILEOP_TRACE
