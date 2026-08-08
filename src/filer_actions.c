@@ -240,6 +240,13 @@ static u64 filerCachedFileSize(const FILEINFO *file)
 	return ((u64)file->stats.Reserve2 << 32) | file->stats.FileSizeByte;
 }
 
+#ifdef DFFS
+static int filerDffsSizeLooksPossible(u64 size)
+{
+	return size <= DFFS_MAX_VOLUME_SIZE;
+}
+#endif
+
 u64 getFileSize(const char *path, const FILEINFO *file)
 {
 	iox_stat_t stat;
@@ -247,12 +254,19 @@ u64 getFileSize(const char *path, const FILEINFO *file)
 	FILEINFO files[MAX_ENTRY];
 	char dir[MAX_PATH], party[MAX_NAME];
 	int nfiles, i, ret;
+#ifdef DFFS
+	int is_dffs_dir = 0;
+#endif
 
 	if (path == NULL || file == NULL)
 		return (u64)-1;
 
 	if (!ensurePathDeviceStackReady(path))
 		return 0;
+
+#ifdef DFFS
+	is_dffs_dir = isDffsPath(path) || isDffsPath(file->name);
+#endif
 
 	if (file->stats.AttrFile & sceMcFileAttrSubdir) {  //Folder object to size up
 		sprintf(dir, "%s%s/", path, file->name);
@@ -261,6 +275,11 @@ u64 getFileSize(const char *path, const FILEINFO *file)
 			filesize = getFileSize(dir, &files[i]);  //recurse for each object in folder
 			if (filesize == (u64)-1)
 				return (u64)-1;
+#ifdef DFFS
+			else if (is_dffs_dir &&
+			         (!filerDffsSizeLooksPossible(filesize) || !filerDffsSizeLooksPossible(size + filesize)))
+				continue;
+#endif
 			else
 				size += filesize;
 		}
@@ -287,9 +306,11 @@ u64 getFileSize(const char *path, const FILEINFO *file)
 			makeHostPath(dir, dir);
 #endif
 #ifdef DFFS
-		if (isDffsPath(dir))
+		if (isDffsPath(dir)) {
+			if (!filerDffsSizeLooksPossible(cached_size))
+				return 0;
 			size = cached_size;
-		else
+		} else
 #endif
 		{
 			memset(&stat, 0, sizeof(stat));

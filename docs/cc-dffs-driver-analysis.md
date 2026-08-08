@@ -271,6 +271,16 @@ metadata, not from a later `fileXioGetStat()` call. The DFFS volume lives on
 small Crystal Chip NOR/data flash, so the high 32-bit size field is forced to
 zero in wLaunchELF's DFFS listing path.
 
+Folder totals need one more guard. DFFS is FAT-like, but the recovered `dread`
+path only exposes old-IOMAN regular/directory mode and the low 32-bit FAT size;
+it does not expose the original FAT attribute reliably enough for wLaunchELF to
+filter long-filename, deleted, volume-label, or other pseudo entries by
+attribute. On a 1-4 MB Crystal Chip flash device, any single DFFS file size or
+recursive folder total above 4 MB is impossible. wLaunchELF therefore rejects
+non-printable DFFS names, DFFS entries that look like raw FAT LFN records, and
+impossible DFFS file sizes before recursive folder sizing can cache a bogus
+multi-GB value.
+
 ## Directory Path Quirk
 
 The recovered `dffs.irx` directory-open function stores a private handle, locks

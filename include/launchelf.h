@@ -376,6 +376,7 @@ int IsSupportedFileType(char *path);
 void CleanUpForExec(void);
 int isDffsPath(const char *path);
 #ifdef DFFS
+#define DFFS_MAX_VOLUME_SIZE (4U * 1024U * 1024U)
 int makeDffsDirectoryOpenPath(const char *path, char *out, size_t out_size);
 #endif
 #ifdef XFROM

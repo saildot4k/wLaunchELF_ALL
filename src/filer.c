@@ -1182,6 +1182,53 @@ int pollRootMemoryCardDevices(void)
 //------------------------------
 //endfunc addRootUsbDeviceEntries
 //--------------------------------------------------------------
+#ifdef DFFS
+static int dffsRecordNameLooksUsable(const char *name)
+{
+	unsigned char c;
+	int i;
+
+	if (name[0] == '\0')
+		return FALSE;
+
+	for (i = 0; name[i] != '\0'; i++) {
+		c = (unsigned char)name[i];
+		if (c < 0x20 || c >= 0x7f)
+			return FALSE;
+		switch (c) {
+			case '<':
+			case '>':
+			case ':':
+			case '"':
+			case '/':
+			case '\\':
+			case '|':
+			case '?':
+			case '*':
+				return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+static int dffsRecordLooksLikeLfnEntry(const char *name, u32 size)
+{
+	return (size > (DFFS_MAX_VOLUME_SIZE / 4) &&
+	        name[0] >= 'A' && name[0] <= 'T' &&
+	        name[1] != '\0' && name[2] == '\0');
+}
+
+static int dffsFileEntryLooksUsable(const char *name, u32 size)
+{
+	if (!dffsRecordNameLooksUsable(name))
+		return FALSE;
+	if (dffsRecordLooksLikeLfnEntry(name, size))
+		return FALSE;
+	return size <= DFFS_MAX_VOLUME_SIZE;
+}
+#endif
+
 int readGENERIC(const char *path, FILEINFO *info, int max)
 {
 	iox_dirent_t record;
@@ -1198,11 +1245,20 @@ int readGENERIC(const char *path, FILEINFO *info, int max)
 		if ((FIO_S_ISDIR(record.stat.mode)) && (!strcmp(record.name, ".") || !strcmp(record.name, "..")))
 			continue;  //Skip entry if pseudo-folder "." or ".."
 
+#ifdef DFFS
+		if (is_dffs && !dffsRecordNameLooksUsable(record.name))
+			continue;
+#endif
+
 		strcpy(info[n].name, record.name);
 		clearMcTable(&info[n].stats);
 		if (FIO_S_ISDIR(record.stat.mode)) {
 			info[n].stats.AttrFile = MC_ATTR_norm_folder;
 		} else if (FIO_S_ISREG(record.stat.mode)) {
+#ifdef DFFS
+			if (is_dffs && !dffsFileEntryLooksUsable(record.name, record.stat.size))
+				continue;
+#endif
 			info[n].stats.AttrFile = MC_ATTR_norm_file;
 			info[n].stats.FileSizeByte = record.stat.size;
 			info[n].stats.Reserve2 = is_dffs ? 0 : record.stat.hisize;

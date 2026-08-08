@@ -168,7 +168,11 @@ File size handling is also DFFS-specific. The recovered driver reports file
 sizes through `dread()` directory entries, but its `getstat` slot is a `-1`
 stub. For DFFS, wLaunchELF therefore treats the listed 32-bit FAT file size as
 authoritative, forces the high size word to zero, and uses cached listing sizes
-when recursively calculating folder totals.
+when recursively calculating folder totals. Because the recovered driver does
+not reliably pass through FAT attributes for long-filename or other pseudo
+directory records, wLaunchELF also rejects non-printable DFFS names, raw-looking
+LFN records, and any DFFS file or recursive folder size above the 4 MB maximum
+Crystal Chip flash size.
 
 ELF launch from `dffs:/` is supported through the normal loader handoff. The
 embedded loader reads the target ELF with `SifLoadElf()` before optional IOP
