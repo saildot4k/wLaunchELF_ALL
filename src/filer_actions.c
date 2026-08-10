@@ -82,6 +82,46 @@ static int filerMkdirNoOverwrite(const char *path)
 	return genMkdir(path, fileMode);
 }
 
+#if defined(ETH) || defined(UDPFS)
+static int filerProbeParentDirectory(const char *path)
+{
+	char parent[MAX_PATH];
+	char *colon, *slash;
+	int fd;
+
+	snprintf(parent, sizeof(parent), "%s", path);
+	colon = strchr(parent, ':');
+	slash = strrchr(parent, '/');
+	if (colon == NULL || slash == NULL || slash <= colon)
+		return -1;
+	*slash = '\0';
+
+	fd = genDopen(parent);
+	if (fd < 0)
+		return fd;
+	genDclose(fd);
+	return 0;
+}
+
+static int filerRetryNetworkMkdirNoOverwrite(const char *path, int first_ret)
+{
+	int conflict_type;
+	int ret;
+
+	conflict_type = filerPathConflictType(path);
+	if (conflict_type == FILER_CONFLICT_DIR)
+		return -EEXIST;
+	if (conflict_type == FILER_CONFLICT_FILE)
+		return -1;
+
+	filerProbeParentDirectory(path);
+	ret = genMkdir(path, fileMode);
+	if (ret == -EEXIST)
+		return ret;
+	return (ret < 0) ? first_ret : ret;
+}
+#endif
+
 static int filerIsMcRootExploitFolderName(const char *name)
 {
 	if (name == NULL)
@@ -665,6 +705,8 @@ int newdir(const char *path, const char *name)
 		strcat(dir, name);
 		genLimObjName(dir, 0);
 		ret = filerMkdirNoOverwrite(dir);
+		if (ret < 0 && ret != -EEXIST)
+			ret = filerRetryNetworkMkdirNoOverwrite(dir, ret);
 #endif
 	} else {  //For all other devices
 		strcpy(dir, path);

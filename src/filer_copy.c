@@ -109,6 +109,13 @@ static int isHddCommonParty(const char *party)
 	return (!strncmp(party, "hdd", 3) && party[3] >= '0' && party[3] <= '9' && !strcmp(party + 4, ":__common"));
 }
 
+#if defined(ETH) || defined(UDPFS)
+static int isNetworkPath(const char *path)
+{
+	return (!strncmp(path, "host", 4) || !strncmp(path, "udpfs", 5));
+}
+#endif
+
 static int calcTransferSpeed(u64 bytes, int millis)
 {
 	u64 bytes_per_second;
@@ -880,7 +887,11 @@ non_PSU_RESTORE_init:
 			makeHostPath(out, out);
 #endif
 		genLimObjName(out, 0);                                //Limit dest file name
-		dummy = genRemove(out);                               //Remove old file if present
+		dummy = 0;
+#if defined(ETH) || defined(UDPFS)
+		if (!isNetworkPath(out))
+#endif
+			dummy = genRemove(out);  //Remove old file if present
 #if FILEOP_TRACE
 		if (trace_vmc_copy)
 			printf("[VMC_COPY] remove existing out='%s' ret=%d recurse=%d\n", out, dummy, recurses);
@@ -906,7 +917,7 @@ non_PSU_RESTORE_init:
 	buffSize = COPY_BUFFER_FAST_DEFAULT;  //First assume fast-device buffer size
 #ifdef DFFS
 	if (in_is_dffs || out_is_dffs)
-		buffSize = 4096;  //DFFS is tiny NOR-backed FAT; keep transfers page/sector friendly.
+		buffSize = 131072;  //Use 128KB for DFFS transfers.
 	else
 #endif
 	if (!strncmp(out, "mc", 2) || !strncmp(out, "mass", 4) || !strncmp(out, "vmc", 3))
