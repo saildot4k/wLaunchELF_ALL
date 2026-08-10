@@ -1994,9 +1994,11 @@ static void submenu_func_GetSize(char *mess, char *path, FILEINFO *files)
 static void subfunc_Paste(char *mess, char *path)
 {
 	char tmp[MAX_PATH], tmp1[MAX_PATH];
+	const char *copy_error;
 	int i, ret = -1, trace_vmc_paste;
 
 	written_size = 0;
+	clearCopyErrorMessage();
 	PasteTime = Timer();  //Note initial pasting time
 	if (!strcmp(path, clipPath))
 		goto finished;
@@ -2060,7 +2062,11 @@ finished:
 	if (ret < 0) {
 		printf("[PASTE] failed ret=%d src='%s' dst='%s' mode=%d cut=%d\n",
 		       ret, clipPath, path, PasteMode, browser_cut);
-		strcpy(mess, LNG(Paste_Failed));
+		copy_error = getCopyErrorMessage();
+		if (copy_error != NULL)
+			snprintf(mess, MAX_PATH, "%s: %s", LNG(Paste_Failed), copy_error);
+		else
+			strcpy(mess, LNG(Paste_Failed));
 		browser_pushed = FALSE;
 	} else {
 		if (browser_cut)

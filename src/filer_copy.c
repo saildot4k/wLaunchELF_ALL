@@ -29,6 +29,66 @@
 
 #define TRANSFER_ETA_UPDATE_MS 1000
 #define COPY_BUFFER_FAST_DEFAULT 0x100000
+#define COPY_ERROR_PATH_TAIL 56
+
+static char CopyErrorMessage[MAX_PATH];
+
+void clearCopyErrorMessage(void)
+{
+	CopyErrorMessage[0] = '\0';
+}
+
+const char *getCopyErrorMessage(void)
+{
+	return (CopyErrorMessage[0] != '\0') ? CopyErrorMessage : NULL;
+}
+
+static const char *copyErrorPathTail(const char *path)
+{
+	size_t len;
+
+	if (path == NULL)
+		return "<null>";
+
+	len = strlen(path);
+	return (len > COPY_ERROR_PATH_TAIL) ? path + len - COPY_ERROR_PATH_TAIL : path;
+}
+
+static void setCopyErrorMessage(const char *op, int ret, const char *path)
+{
+	const char *display_path;
+	const char *prefix;
+
+	if (CopyErrorMessage[0] != '\0')
+		return;
+
+	display_path = copyErrorPathTail(path);
+	prefix = (display_path != path && path != NULL) ? "..." : "";
+	snprintf(CopyErrorMessage, sizeof(CopyErrorMessage), "%s %d: %s%s", op, ret, prefix, display_path);
+}
+
+static void setCopyTransferErrorMessage(int bytesRead, int bytesWritten, const char *path)
+{
+	const char *display_path;
+	const char *prefix;
+
+	if (CopyErrorMessage[0] != '\0')
+		return;
+
+	display_path = copyErrorPathTail(path);
+	prefix = (display_path != path && path != NULL) ? "..." : "";
+	snprintf(CopyErrorMessage, sizeof(CopyErrorMessage), "rw r%d w%d: %s%s", bytesRead, bytesWritten, prefix, display_path);
+}
+
+static FILEINFO *allocCopyFileList(const char *path)
+{
+	FILEINFO *files;
+
+	files = (FILEINFO *)malloc(sizeof(FILEINFO) * MAX_ENTRY);
+	if (files == NULL)
+		setCopyErrorMessage("list alloc", -ENOMEM, path);
+	return files;
+}
 
 static int isMemoryCardLikePath(const char *path)
 {
@@ -326,7 +386,7 @@ finish:
 //--------------------------------------------------------------
 int copy(char *outPath, const char *inPath, FILEINFO file, int recurses)
 {
-	FILEINFO newfile, files[MAX_ENTRY];
+	FILEINFO newfile, *files = NULL;
 	iox_stat_t iox_stat;
 	char out[MAX_PATH], in[MAX_PATH], tmp[MAX_PATH],
 	    progress[MAX_PATH * 4],
@@ -357,8 +417,10 @@ int copy(char *outPath, const char *inPath, FILEINFO file, int recurses)
 #endif
 	u64 CurrentTime = 0LL;
 
-	if (recurses + 1 >= MAX_RECURSE)
+	if (recurses + 1 >= MAX_RECURSE) {
+		setCopyErrorMessage("depth", -1, file.name);
 		return -1;
+	}
 
 #if FILEOP_TRACE
 	trace_vmc_copy = (!strncmp(inPath, "vmc", 3) || !strncmp(outPath, "vmc", 3));
@@ -370,6 +432,7 @@ int copy(char *outPath, const char *inPath, FILEINFO file, int recurses)
 			printf("[VMC_COPY] stack-ready failed inPath='%s' outPath='%s' name='%s' recurse=%d\n",
 			       inPath, outPath, file.name, recurses);
 #endif
+		setCopyErrorMessage("stack", -1, inPath);
 		return -1;
 	}
 
@@ -562,6 +625,7 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 					printf("[VMC_COPY] mkdir failed outPath='%s' name='%s' out='%s' ret=%d recurse=%d\n",
 					       outPath, newfile.name, out, ret, recurses);
 #endif
+				setCopyErrorMessage("mkdir", ret, out);
 				return -1;  //return error for failure to create destination folder
 			}
 
@@ -586,6 +650,15 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 		genLimObjName(out, 0);                        //Limit dest folder name
 		strcat(out, "/");                             //Separate dest folder name
 
+		files = allocCopyFileList(in);
+		if (files == NULL) {
+			if ((PM_flag[recurses + 1] == PM_PSU_BACKUP) && (PM_file[recurses + 1] >= 0)) {
+				genClose(PM_file[recurses + 1]);
+				PM_file[recurses + 1] = -1;
+			}
+			return -1;
+		}
+
 		if (PasteMode == PM_PSU_RESTORE && PSU_restart_f) {
 			nfiles = PSU_content;
 			for (i = 0; i < nfiles; i++) {
@@ -603,6 +676,7 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 						printf("[VMC_COPY] psu child failed parent_in='%s' parent_out='%s' child='%s' ret=%d recurse=%d\n",
 						       in, out, files[0].name, ret, recurses);
 #endif
+					setCopyErrorMessage("child", ret, files[0].name);
 					break;
 				}
 				//We must also step past any file padding, for next header
@@ -633,10 +707,13 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 						printf("[VMC_COPY] child failed parent_in='%s' parent_out='%s' child='%s' ret=%d recurse=%d\n",
 						       in, out, files[i].name, ret, recurses);
 #endif
+					setCopyErrorMessage("child", ret, files[i].name);
 					break;
 				}
 			}  //ends main for loop for all modes other than valid PM_PSU_RESTORE
 		}
+		free(files);
+		files = NULL;
 		//folder contents are copied by the recursive call above, with error handling below
 		if (ret < 0) {
 			if ((PM_flag[recurses + 1] == PM_PSU_BACKUP) && (PM_file[recurses + 1] >= 0))
@@ -648,8 +725,10 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 		//attributes and timestamps, and close the attribute/PSU file if such was used
 		//Lots of stuff need to be done here to make PSU operations work properly
 		if (PM_flag[recurses + 1] == PM_PSU_BACKUP) {  //PSU Backup mode folder paste closure
-			if (psu_backup_finalize_root_image(PM_file[recurses + 1], mcT_head_p, PSU_content) < 0)
+			if (psu_backup_finalize_root_image(PM_file[recurses + 1], mcT_head_p, PSU_content) < 0) {
+				setCopyErrorMessage("psu final", -EIO, out);
 				return -1;
+			}
 		} else if (PM_flag[recurses + 1] == PM_NORMAL) {             //Normal mode folder paste closure
 			if (!strncmp(out, "mc", 2)) {                            //Handle folder copied to MC
 				ensureMemoryCardPortAccessible(out[2] - '0');
@@ -724,8 +803,10 @@ restart_copy:  //restart point for PM_PSU_RESTORE to reprocess modified argument
 		if (!genCmpFileExt(in, "psu"))
 			goto non_PSU_RESTORE_init;  //if not a PSU file, go do normal pasting
 
-		if (psu_restore_open_root_image(in, &file, &in_fd, &PSU_content) < 0)
+		if (psu_restore_open_root_image(in, &file, &in_fd, &PSU_content) < 0) {
+			setCopyErrorMessage("psu open", -EIO, in);
 			return -1;
+		}
 		PM_file[recurses + 1] = in_fd;           //File descriptor for PSU
 		PM_flag[recurses + 1] = PM_PSU_RESTORE;  //Mode flag for recursive entry
 		//The helper above transformed the PSU header into a folder-like FILEINFO entry
@@ -750,6 +831,7 @@ non_PSU_RESTORE_init:
 				if (trace_vmc_copy)
 					printf("[VMC_COPY] input open failed in='%s' ret=%d recurse=%d\n", in, ret, recurses);
 #endif
+				setCopyErrorMessage("src open", ret, in);
 				goto copy_file_exit;
 			}
 #ifdef DFFS
@@ -757,6 +839,7 @@ non_PSU_RESTORE_init:
 				size = ((u64)file.stats.Reserve2 << 32) | file.stats.FileSizeByte;
 				if (size > DFFS_MAX_VOLUME_SIZE) {
 					ret = -EIO;
+					setCopyErrorMessage("src size", ret, in);
 					goto copy_file_exit;
 				}
 			} else
@@ -770,6 +853,7 @@ non_PSU_RESTORE_init:
 						printf("[VMC_COPY] input size failed in='%s' fd=%d ret=%d recurse=%d\n",
 						       in, in_fd, ret, recurses);
 #endif
+					setCopyErrorMessage("src seek", ret, in);
 					goto copy_file_exit;
 				}
 				size = (u64)in_size;
@@ -787,6 +871,7 @@ non_PSU_RESTORE_init:
 		out_fd = PM_file[recurses];
 		if (psu_backup_begin_file_entry(out_fd, mcT_head_p, &psu_pad_size, &PSU_content) < 0) {
 			ret = -EIO;
+			setCopyErrorMessage("psu file", ret, out);
 			goto copy_file_exit;
 		}
 	} else {            //Any other PasteMode than PM_PSU_BACKUP needs a new output file
@@ -807,6 +892,7 @@ non_PSU_RESTORE_init:
 			if (trace_vmc_copy)
 				printf("[VMC_COPY] output open failed out='%s' ret=%d recurse=%d\n", out, ret, recurses);
 #endif
+			setCopyErrorMessage("dst open", ret, out);
 			goto copy_file_exit;
 		}
 	}
@@ -860,6 +946,7 @@ non_PSU_RESTORE_init:
 	buff = (char *)memalign(64, buffSize);  //Attempt buffer allocation
 	if (buff == NULL) {                     //if allocation fails
 		ret = -ENOMEM;
+		setCopyErrorMessage("alloc", ret, in);
 		genClose(out_fd);
 		out_fd = -1;
 		if (PM_flag[recurses] != PM_PSU_BACKUP)
@@ -988,6 +1075,7 @@ non_PSU_RESTORE_init:
 				if (PM_flag[recurses] != PM_PSU_BACKUP)
 					genRemove(out);
 				ret = -1;             // flag generic error
+				setCopyErrorMessage("cancel", ret, in);
 				goto copy_file_exit;  // go deal with it
 			}
 			}
@@ -1013,6 +1101,7 @@ non_PSU_RESTORE_init:
 				if (PM_flag[recurses] != PM_PSU_BACKUP)
 					genRemove(out);
 				ret = -EIO;  // flag generic I/O error
+				setCopyTransferErrorMessage(bytesRead, bytesWritten, in);
 				goto copy_file_exit;
 			}
 			size -= bytesRead;
@@ -1042,6 +1131,7 @@ copy_file_data_done:
 	if (PM_flag[recurses] == PM_PSU_BACKUP) {
 		if (psu_backup_write_padding(out_fd, psu_pad_size) < 0) {
 			ret = -EIO;
+			setCopyErrorMessage("psu pad", ret, out);
 			goto copy_file_exit;
 		}
 		out_fd = -1;  //prevent output file closure below
@@ -1057,8 +1147,10 @@ copy_file_data_done:
 		if (dummy < 0)
 			ret = dummy;
 		out_fd = -1;  //prevent dual closure attempt
-		if (ret < 0)
+		if (ret < 0) {
+			setCopyErrorMessage("dst close", ret, out);
 			goto copy_file_exit;
+		}
 	}
 
 	if (!strncmp(out, "mc", 2)) {                                 //Handle file copied to MC
@@ -1117,6 +1209,8 @@ copy_file_data_done:
 //The code below is also used for all errors in copying a file,
 //but those cases are distinguished by a negative value in 'ret'
 copy_file_exit:
+	if (ret < 0)
+		setCopyErrorMessage("copy", ret, in);
 	free(buff2);
 	free(buff);
 copy_file_exit_mem_err:

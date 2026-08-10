@@ -87,6 +87,8 @@ int pollRootMemoryCardDevices(void);
 void discardNextMx4sioRootListing(const char *path);
 int ensurePathDeviceStackReady(const char *path);
 int prepareTransferDeviceStacks(const char *src_path, const char *dst_path);
+void clearCopyErrorMessage(void);
+const char *getCopyErrorMessage(void);
 int copy(char *outPath, const char *inPath, FILEINFO file, int recurses);
 
 #endif
